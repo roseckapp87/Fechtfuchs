@@ -1,0 +1,2540 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🦊 Fecht-Fuchs – Fechten lernen!</title>
+<style>
+  /* No external fonts - works fully offline */
+  :root {
+    --red: #E63946;
+    --orange: #FF7F11;
+    --yellow: #FFD166;
+    --green: #06D6A0;
+    --blue: #118AB2;
+    --purple: #7B5EA7;
+    --pink: #FF6B9D;
+    --bg: #FFF8F0;
+    --card: #FFFFFF;
+    --text: #2D2D2D;
+    --light: #F0E6FF;
+    --shadow: 0 8px 24px rgba(0,0,0,0.12);
+    --radius: 24px;
+    --radius-sm: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Nunito', 'Varela Round', 'Comic Sans MS', 'Trebuchet MS', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1, h2, h3 { font-family: 'Baloo 2', 'Nunito', 'Trebuchet MS', Arial, sans-serif; font-weight: 800; }
+  .screen { display: none; min-height: 100vh; padding: 0; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ===== TOP NAV ===== */
+  .topnav {
+    background: linear-gradient(135deg, var(--red) 0%, var(--orange) 100%);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: 0 4px 16px rgba(230,57,70,0.3);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topnav-title { color: white; font-size: 1.4rem; font-weight: 800; font-family: 'Baloo 2', 'Trebuchet MS', Arial, sans-serif; }
+  .back-btn {
+    background: rgba(255,255,255,0.25); border: none; border-radius: 50%; width: 44px; height: 44px;
+    color: white; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.4); }
+  .hearts { display: flex; gap: 4px; }
+  .heart { font-size: 1.4rem; }
+
+  /* ===== HOME ===== */
+  #home { background: linear-gradient(160deg, #FFF0E0 0%, #FFE0F0 50%, #E0EEFF 100%); }
+  .home-hero {
+    padding: 30px 20px 10px;
+    text-align: center;
+  }
+  .mascot-wrap { position: relative; display: inline-block; margin-bottom: 10px; }
+  .mascot {
+    font-size: 90px;
+    display: block;
+    animation: bounce 2s infinite ease-in-out;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  .mascot-bubble {
+    position: absolute; top: -10px; right: -30px;
+    background: white; border-radius: 16px; padding: 6px 10px;
+    font-size: 0.85rem; font-weight: 700; color: var(--red);
+    box-shadow: var(--shadow); white-space: nowrap;
+  }
+  .mascot-bubble::after {
+    content: ''; position: absolute; bottom: -8px; left: 16px;
+    border: 8px solid transparent; border-top-color: white; border-bottom: 0;
+  }
+  .home-title { font-size: 2.2rem; font-weight: 900; color: var(--red); line-height: 1.1; }
+  .home-subtitle { font-size: 1rem; color: #777; margin-top: 6px; }
+  .progress-bar-wrap { margin: 16px 20px; background: #eee; border-radius: 50px; height: 14px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 50px; background: linear-gradient(90deg, var(--green), var(--blue)); transition: width 1s ease; }
+  .progress-label { text-align: center; font-size: 0.85rem; color: #888; margin-top: 4px; }
+  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px 20px 30px; }
+  .menu-card {
+    background: white; border-radius: var(--radius); padding: 22px 14px;
+    text-align: center; box-shadow: var(--shadow); cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s; border: 3px solid transparent;
+    font-weight: 800; font-size: 1rem;
+  }
+  .menu-card:active { transform: scale(0.95); }
+  .menu-card .menu-icon { font-size: 2.8rem; display: block; margin-bottom: 8px; }
+  .menu-card.lernen { border-color: var(--blue); color: var(--blue); }
+  .menu-card.quiz { border-color: var(--red); color: var(--red); }
+  .menu-card.woerter { border-color: var(--purple); color: var(--purple); }
+  .menu-card.fortschritt { border-color: var(--green); color: var(--green); }
+  .menu-card.belohnungen { border-color: var(--orange); color: var(--orange); grid-column: span 2; }
+  .menu-card.schwach { border-color: var(--red); color: var(--red); grid-column: span 2; }
+
+  /* ===== CONFIRM DIALOG ===== */
+  .overlay { position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px; }
+  .dialog-box { background:white;border-radius:var(--radius);padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.25); }
+  .dialog-box h3 { font-size:1.2rem;margin-bottom:8px; }
+  .dialog-box p { font-size:0.95rem;color:#666;margin-bottom:20px; }
+  .dialog-btns { display:flex;gap:10px; }
+  .dialog-btns button { flex:1; }
+
+  /* ===== CARDS & BUTTONS ===== */
+  .content-area { padding: 20px; flex: 1; }
+  .big-btn {
+    display: block; width: 100%; padding: 18px;
+    border-radius: var(--radius-sm); border: none; cursor: pointer;
+    font-family: 'Nunito', 'Trebuchet MS', Arial, sans-serif; font-size: 1.1rem; font-weight: 800;
+    transition: transform 0.15s, box-shadow 0.15s; margin-bottom: 14px;
+  }
+  .big-btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--red), var(--orange)); color: white; box-shadow: 0 6px 20px rgba(230,57,70,0.35); }
+  .btn-secondary { background: white; color: var(--red); border: 3px solid var(--red); }
+  .btn-green { background: linear-gradient(135deg, var(--green), var(--blue)); color: white; box-shadow: 0 6px 20px rgba(6,214,160,0.35); }
+  .btn-purple { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; box-shadow: 0 6px 20px rgba(123,94,167,0.35); }
+
+  /* ===== QUESTION CARD ===== */
+  .question-card {
+    background: white; border-radius: var(--radius); padding: 24px;
+    box-shadow: var(--shadow); margin-bottom: 16px;
+  }
+  .question-part-badge {
+    display: inline-block; background: var(--yellow); color: #7a5300;
+    border-radius: 50px; padding: 4px 14px; font-size: 0.8rem; font-weight: 800; margin-bottom: 12px;
+  }
+  .question-text { font-size: 1.15rem; font-weight: 800; line-height: 1.4; margin-bottom: 8px; }
+  .answer-count-badge {
+    display: inline-block; background: #EEF2FF; color: var(--blue);
+    border-radius: 50px; padding: 5px 14px; font-size: 0.82rem; font-weight: 700; margin-bottom: 16px;
+  }
+  .answer-option {
+    display: flex; align-items: center; gap: 14px;
+    background: #F8F8FF; border: 3px solid #E0E0F0; border-radius: var(--radius-sm);
+    padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
+    transition: all 0.15s; font-weight: 700; font-size: 1rem;
+  }
+  .answer-option:active { transform: scale(0.98); }
+  .answer-option.selected { background: #EEF6FF; border-color: var(--blue); }
+  .answer-option.correct { background: #E8FFF5; border-color: var(--green); }
+  .answer-option.wrong { background: #FFE8E8; border-color: var(--red); }
+  .answer-option.reveal-correct { background: #E8FFF5; border-color: var(--green); }
+  .option-circle {
+    width: 36px; height: 36px; border-radius: 50%; border: 3px solid #CCC;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1rem; flex-shrink: 0;
+    background: white; transition: all 0.15s;
+  }
+  .answer-option.selected .option-circle { background: var(--blue); border-color: var(--blue); color: white; }
+  .answer-option.correct .option-circle { background: var(--green); border-color: var(--green); color: white; }
+  .answer-option.wrong .option-circle { background: var(--red); border-color: var(--red); color: white; }
+  .answer-option.reveal-correct .option-circle { background: var(--green); border-color: var(--green); color: white; }
+
+  .feedback-box {
+    border-radius: var(--radius-sm); padding: 16px; margin-bottom: 16px;
+    font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 12px;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .feedback-box.success { background: #E8FFF5; color: #1a7a5a; border: 2px solid var(--green); }
+  .feedback-box.error { background: #FFE8E8; color: #8a1a1a; border: 2px solid var(--red); }
+  .feedback-box.partial { background: #FFF8E0; color: #7a5300; border: 2px solid var(--yellow); }
+  .feedback-icon { font-size: 1.8rem; flex-shrink: 0; }
+
+  /* ===== PROGRESS BAR IN QUIZ ===== */
+  .quiz-progress { padding: 16px 20px 0; }
+  .quiz-progress-bar { background: #EEE; border-radius: 50px; height: 10px; margin-top: 8px; }
+  .quiz-progress-fill { height: 100%; border-radius: 50px; background: linear-gradient(90deg, var(--red), var(--orange)); transition: width 0.5s ease; }
+  .quiz-meta { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: #888; }
+
+  /* ===== VISUAL QUESTIONS ===== */
+  .fencing-strip {
+    background: #f0f4ff; border-radius: 12px; padding: 16px; margin: 12px 0;
+    border: 2px dashed var(--blue); position: relative; overflow: hidden;
+  }
+  .strip-track {
+    display: flex; justify-content: space-between; align-items: center;
+    background: white; border-radius: 8px; padding: 10px; position: relative;
+  }
+  .strip-line {
+    width: 2px; background: #333; height: 50px; position: absolute;
+  }
+  .strip-label { font-size: 0.7rem; font-weight: 800; color: var(--blue); text-align: center; }
+  .fencer-body { font-size: 2.4rem; text-align: center; }
+
+  .target-figure {
+    display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin: 12px 0;
+  }
+  .figure-card {
+    background: white; border: 3px solid #DDD; border-radius: 16px; padding: 16px;
+    text-align: center; cursor: pointer; transition: all 0.15s; min-width: 80px;
+  }
+  .figure-card.selected { border-color: var(--blue); background: #EEF6FF; }
+  .figure-svg { width: 60px; height: 90px; }
+
+  /* ===== GLOSSARY ===== */
+  .glossary-card {
+    background: white; border-radius: var(--radius-sm); padding: 18px;
+    margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-left: 5px solid var(--purple);
+  }
+  .glossary-term { font-weight: 900; font-size: 1.1rem; color: var(--purple); margin-bottom: 4px; }
+  .glossary-emoji { font-size: 1.5rem; margin-right: 8px; }
+  .glossary-def { color: #555; font-size: 0.95rem; line-height: 1.5; }
+
+  /* ===== PROGRESS SCREEN ===== */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat-card {
+    background: white; border-radius: var(--radius-sm); padding: 18px;
+    text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .stat-number { font-size: 2.2rem; font-weight: 900; font-family: 'Baloo 2', 'Trebuchet MS', Arial, sans-serif; }
+  .stat-label { font-size: 0.8rem; color: #888; font-weight: 700; margin-top: 4px; }
+
+  /* ===== BADGE / REWARD ===== */
+  .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .badge-card {
+    background: white; border-radius: var(--radius-sm); padding: 16px;
+    text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border: 3px solid #EEE;
+  }
+  .badge-card.earned { border-color: var(--yellow); background: #FFFBE0; }
+  .badge-icon { font-size: 2.4rem; display: block; margin-bottom: 6px; }
+  .badge-name { font-size: 0.75rem; font-weight: 800; }
+  .badge-card:not(.earned) { opacity: 0.5; filter: grayscale(1); }
+
+  /* ===== END SCREEN ===== */
+  .end-screen { text-align: center; padding: 30px 20px; }
+  .end-stars { font-size: 3rem; margin: 16px 0; animation: starPop 0.5s ease; }
+  @keyframes starPop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+  .end-score { font-size: 3.5rem; font-weight: 900; font-family: 'Baloo 2', 'Trebuchet MS', Arial, sans-serif; color: var(--red); }
+  .end-label { font-size: 1rem; color: #888; }
+  .end-message { font-size: 1.2rem; font-weight: 800; margin: 16px 0; }
+
+  /* ===== MODE SELECT ===== */
+  .mode-card {
+    background: white; border-radius: var(--radius); padding: 24px;
+    text-align: center; box-shadow: var(--shadow); margin-bottom: 16px; cursor: pointer;
+    transition: transform 0.15s; border: 3px solid transparent;
+  }
+  .mode-card:active { transform: scale(0.97); }
+  .mode-card .mode-icon { font-size: 3rem; display: block; margin-bottom: 10px; }
+  .mode-card h3 { font-size: 1.2rem; margin-bottom: 6px; }
+  .mode-card p { font-size: 0.9rem; color: #888; }
+  .mode-card.m5 { border-color: var(--blue); }
+  .mode-card.m10 { border-color: var(--purple); }
+  .mode-card.mall { border-color: var(--red); }
+
+  /* CONFETTI */
+  .confetti-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+
+  /* Scroll */
+  .scroll-area { flex: 1; overflow-y: auto; }
+
+  /* ===== DRAG & DROP TABLEAU ===== */
+  .dd-info { background:#f0fff8; border:2px solid var(--green); border-radius:var(--radius-sm); padding:14px; margin-bottom:14px; font-size:0.88rem; font-weight:700; color:#1a6a4a; }
+  .dd-matches { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+  .dd-match { background:white; border:2px solid #DDD; border-radius:12px; padding:10px 14px; font-size:0.9rem; font-weight:700; }
+  .dd-label { font-size:0.75rem; font-weight:800; color:#888; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.05em; }
+  .dd-tokens { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; min-height:48px; padding:8px; background:#F8F8FF; border:2px dashed #CCC; border-radius:12px; }
+  .dd-token {
+    background:white; border:2.5px solid var(--blue); border-radius:10px;
+    padding:8px 14px; font-size:0.9rem; font-weight:800; color:var(--blue);
+    cursor:grab; user-select:none; touch-action:none;
+    transition:transform 0.1s, box-shadow 0.1s; box-shadow:0 2px 8px rgba(17,138,178,0.15);
+  }
+  .dd-token:active { cursor:grabbing; transform:scale(1.08); box-shadow:0 6px 18px rgba(17,138,178,0.3); }
+  .dd-token.used { opacity:0.35; pointer-events:none; }
+  .dd-token.win { border-color:var(--green); color:var(--green); }
+  .dd-token.lose { border-color:var(--red); color:var(--red); }
+  .dd-tableau { width:100%; border-collapse:collapse; margin-bottom:16px; }
+  .dd-tableau th { background:var(--green); color:white; padding:8px 6px; font-size:0.8rem; font-weight:800; text-align:center; border-radius:0; }
+  .dd-tableau th:first-child { border-radius:8px 0 0 0; text-align:left; padding-left:10px; }
+  .dd-tableau th:last-child { border-radius:0 8px 0 0; }
+  .dd-tableau td { padding:6px 4px; border:1px solid #EEE; text-align:center; font-size:0.85rem; font-weight:700; }
+  .dd-tableau td.name-cell { text-align:left; padding-left:10px; font-weight:800; background:#F8FFF8; }
+  .dd-tableau td.self-cell { background:#EEE; }
+  .dd-drop-cell {
+    min-width:54px; min-height:38px; background:#F0F8FF; border:2.5px dashed #AAD8F0 !important;
+    border-radius:8px; cursor:pointer; transition:all 0.15s; position:relative;
+  }
+  .dd-drop-cell.drag-over { background:#D0EFFF; border-color:var(--blue) !important; transform:scale(1.05); }
+  .dd-drop-cell.filled-win { background:#E8FFF5; border-color:var(--green) !important; color:var(--green); font-weight:900; }
+  .dd-drop-cell.filled-lose { background:#FFE8E8; border-color:var(--red) !important; color:var(--red); font-weight:900; }
+  .dd-drop-cell.correct-final { background:#C8FFE8; border-color:var(--green) !important; }
+  .dd-drop-cell.wrong-final { background:#FFD0D0; border-color:var(--red) !important; }
+  .dd-remove-hint { font-size:0.65rem; color:#AAA; display:block; }
+  .dd-legend { display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  .dd-legend-item { display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:700; }
+  .dd-legend-dot { width:14px; height:14px; border-radius:50%; }
+  /* dragging ghost */
+  .dd-dragging-ghost {
+    position:fixed; pointer-events:none; z-index:9999;
+    background:white; border:2.5px solid var(--blue); border-radius:10px;
+    padding:8px 14px; font-size:0.9rem; font-weight:800; color:var(--blue);
+    opacity:0.9; box-shadow:0 8px 24px rgba(0,0,0,0.2);
+    transform:translate(-50%,-50%);
+  }
+
+  /* Section header */
+  .section-header {
+    background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 100%);
+    color: white; padding: 18px 20px; margin-bottom: 0;
+    font-family: 'Baloo 2', 'Trebuchet MS', Arial, sans-serif; font-size: 1.4rem; font-weight: 800;
+  }
+  .section-sub { font-size: 0.85rem; opacity: 0.85; font-family: 'Nunito', 'Trebuchet MS', Arial, sans-serif; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- CONFETTI -->
+<div class="confetti-wrap" id="confettiWrap"></div>
+
+<!-- ============================
+     HOME SCREEN
+============================ -->
+<div id="home" class="screen active">
+  <div class="home-hero">
+    <div class="mascot-wrap">
+      <span class="mascot">🦊</span>
+      <div class="mascot-bubble">Hallo! Ich bin Ferdi! 🤺</div>
+    </div>
+    <h1 class="home-title">Fecht-Fuchs</h1>
+    <p class="home-subtitle">Lerne alles übers Fechten – spielend leicht!</p>
+  </div>
+  <div style="padding: 0 20px;">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="homeProgressBar" style="width:0%"></div>
+    </div>
+    <p class="progress-label" id="homeProgressLabel">Noch keine Fragen beantwortet</p>
+  </div>
+  <div class="menu-grid">
+    <div class="menu-card lernen" onclick="showLernMode()">
+      <span class="menu-icon">📚</span>Lernen
+    </div>
+    <div class="menu-card quiz" onclick="showQuizSelect()">
+      <span class="menu-icon">🎯</span>Quiz
+    </div>
+    <div class="menu-card woerter" onclick="showWoerter()">
+      <span class="menu-icon">💬</span>Wörter verstehen
+    </div>
+    <div class="menu-card fortschritt" onclick="showFortschritt()">
+      <span class="menu-icon">📊</span>Mein Fortschritt
+    </div>
+    <div class="menu-card schwach" onclick="showSchwacheFragenMode()">
+      <span class="menu-icon">💪</span>Schwache Fragen üben
+    </div>
+    <div class="menu-card belohnungen" onclick="showBelohnungen()">
+      <span class="menu-icon">🏆</span>Belohnungen
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+     LEARN SCREEN
+============================ -->
+<div id="learnScreen" class="screen">
+  <div class="topnav">
+    <button class="back-btn" onclick="showQuitDialog('learn')">←</button>
+    <span class="topnav-title">📚 Lernen</span>
+    <div class="hearts" id="learnHearts">❤️❤️❤️</div>
+  </div>
+  <div class="quiz-progress">
+    <div class="quiz-meta">
+      <span id="learnQNum">Frage 1 von 30</span>
+      <span id="learnScore">⭐ 0 richtig</span>
+    </div>
+    <div class="quiz-progress-bar">
+      <div class="quiz-progress-fill" id="learnProgressFill" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="scroll-area content-area" id="learnContent">
+    <!-- dynamic -->
+  </div>
+  <div style="padding: 0 20px 24px;" id="learnButtons"></div>
+</div>
+
+<!-- ============================
+     QUIZ SELECT
+============================ -->
+<div id="quizSelect" class="screen">
+  <div class="topnav">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="topnav-title">🎯 Quiz</span>
+    <span></span>
+  </div>
+  <div class="content-area">
+    <p style="font-weight:700; color:#888; margin-bottom:16px;">Wie viele Fragen möchtest du üben?</p>
+    <div class="mode-card m5" onclick="startQuiz(5)">
+      <span class="mode-icon">🚀</span>
+      <h3>Schnell-Quiz</h3>
+      <p>5 Fragen – perfekt für kurze Pausen!</p>
+    </div>
+    <div class="mode-card m10" onclick="startQuiz(10)">
+      <span class="mode-icon">🏅</span>
+      <h3>Großes Quiz</h3>
+      <p>10 Fragen – zeig was du kannst!</p>
+    </div>
+    <div class="mode-card mall" onclick="startQuiz(999)">
+      <span class="mode-icon">🦊</span>
+      <h3>Alle Fragen!</h3>
+      <p>Der komplette Turnierkurs – Meister-Modus!</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+     QUIZ SCREEN
+============================ -->
+<div id="quizScreen" class="screen">
+  <div class="topnav">
+    <button class="back-btn" onclick="showQuitDialog()">←</button>
+    <span class="topnav-title">🎯 Quiz</span>
+    <div class="hearts" id="quizHearts">❤️❤️❤️</div>
+  </div>
+  <div class="quiz-progress">
+    <div class="quiz-meta">
+      <span id="quizQNum">Frage 1 von 5</span>
+      <span id="quizScore">⭐ 0 richtig</span>
+    </div>
+    <div class="quiz-progress-bar">
+      <div class="quiz-progress-fill" id="quizProgressFill" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="scroll-area content-area" id="quizContent"></div>
+  <div style="padding: 0 20px 24px;" id="quizButtons"></div>
+</div>
+
+<!-- ============================
+     END SCREEN
+============================ -->
+<div id="endScreen" class="screen">
+  <div class="topnav">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="topnav-title">🏁 Ergebnis</span>
+    <span></span>
+  </div>
+  <div class="content-area end-screen" id="endContent"></div>
+</div>
+
+<!-- ============================
+     WÖRTER SCREEN
+============================ -->
+<div id="woerterScreen" class="screen">
+  <div class="topnav">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="topnav-title">💬 Wörter verstehen</span>
+    <span></span>
+  </div>
+  <div class="scroll-area content-area" id="woerterContent"></div>
+</div>
+
+<!-- ============================
+     FORTSCHRITT SCREEN
+============================ -->
+<div id="fortschrittScreen" class="screen">
+  <div class="topnav">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="topnav-title">📊 Mein Fortschritt</span>
+    <span></span>
+  </div>
+  <div class="scroll-area content-area" id="fortschrittContent"></div>
+</div>
+
+<!-- ============================
+     BELOHNUNGEN SCREEN
+============================ -->
+<div id="belohnungenScreen" class="screen">
+  <div class="topnav">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <span class="topnav-title">🏆 Belohnungen</span>
+    <span></span>
+  </div>
+  <div class="scroll-area content-area" id="belohnungenContent"></div>
+</div>
+
+<!-- ============================
+     SCHWACHE FRAGEN SCREEN
+============================ -->
+<div id="schwachScreen" class="screen">
+  <div class="topnav">
+    <button class="back-btn" onclick="showQuitDialog('schwach')">←</button>
+    <span class="topnav-title">💪 Schwache Fragen</span>
+    <div class="hearts" id="schwachHearts">❤️❤️❤️</div>
+  </div>
+  <div class="quiz-progress">
+    <div class="quiz-meta">
+      <span id="schwachQNum">Frage 1 von ?</span>
+      <span id="schwachScore">⭐ 0 richtig</span>
+    </div>
+    <div class="quiz-progress-bar">
+      <div class="quiz-progress-fill" id="schwachProgressFill" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="scroll-area content-area" id="schwachContent"></div>
+  <div style="padding: 0 20px 24px;" id="schwachButtons"></div>
+</div>
+
+<!-- ============================
+     CONFIRM DIALOG
+============================ -->
+<div class="overlay" id="confirmOverlay" style="display:none;">
+  <div class="dialog-box">
+    <div style="font-size:2.5rem;margin-bottom:10px;">🗑️</div>
+    <h3>Fortschritt löschen?</h3>
+    <p>Alle deine Punkte, Serien und Abzeichen werden gelöscht. Das kann nicht rückgängig gemacht werden!</p>
+    <div class="dialog-btns">
+      <button class="big-btn btn-secondary" style="margin:0;" onclick="document.getElementById('confirmOverlay').style.display='none'">Abbrechen</button>
+      <button class="big-btn btn-primary" style="margin:0;background:var(--red);" onclick="doResetProgress()">Ja, löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+     QUIT QUIZ DIALOG
+============================ -->
+<div class="overlay" id="quitOverlay" style="display:none;">
+  <div class="dialog-box">
+    <div style="font-size:2.5rem;margin-bottom:10px;">🦊</div>
+    <h3>Quiz beenden?</h3>
+    <p>Dein aktueller Fortschritt im Quiz geht verloren. Möchtest du wirklich aufhören?</p>
+    <div class="dialog-btns">
+      <button class="big-btn btn-secondary" style="margin:0;" onclick="document.getElementById('quitOverlay').style.display='none'">Weitermachen</button>
+      <button class="big-btn btn-primary" style="margin:0;" onclick="document.getElementById('quitOverlay').style.display='none';goHome()">Ja, beenden</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =============================================
+// DATA: All questions from PDF
+// =============================================
+const QUESTIONS = [
+  // TEIL A: Allgemeiner Teil
+  {
+    id:'A1', part:'Teil A: Allgemeines', partColor:'#118AB2',
+    text:'Wie heißt die internationale Fechtvereinigung?',
+    type:'single',
+    options:[
+      {letter:'A', text:'FILA', correct:false},
+      {letter:'B', text:'FIFA', correct:false},
+      {letter:'C', text:'FIE', correct:true},
+    ],
+    explanation:'Die FIE ist die Fédération Internationale d\'Escrime – das ist die internationale Fechtvereinigung! 🌍'
+  },
+  {
+    id:'A2', part:'Teil A: Allgemeines', partColor:'#118AB2',
+    text:'Wie heißt die nationale Fechtvereinigung in Deutschland?',
+    type:'single',
+    options:[
+      {letter:'A', text:'DHB', correct:false},
+      {letter:'B', text:'DFB', correct:true},
+      {letter:'C', text:'DOSB', correct:false},
+    ],
+    explanation:'DFB steht für Deutschen Fechter-Bund – das ist der Verband für Fechten in Deutschland! 🇩🇪'
+  },
+  {
+    id:'A3', part:'Teil A: Allgemeines', partColor:'#118AB2',
+    text:'Welches ist die internationale Fechtsprache?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Italienisch', correct:false},
+      {letter:'B', text:'Englisch', correct:false},
+      {letter:'C', text:'Französisch', correct:true},
+    ],
+    explanation:'Beim Fechten spricht der Kampfrichter Französisch! Deshalb ist Französisch die internationale Fechtsprache. 🥐'
+  },
+  {
+    id:'A4', part:'Teil A: Allgemeines', partColor:'#118AB2',
+    text:'Welche drei Waffen gehören zum Sportfechten?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'🤺 Degen', correct:true},
+      {letter:'B', text:'⚔️ Säbel', correct:true},
+      {letter:'C', text:'🌸 Florett', correct:true},
+      {letter:'D', text:'🏹 Pfeil und Bogen', correct:false},
+    ],
+    explanation:'Beim Sportfechten gibt es drei Waffen: Degen, Säbel und Florett. Jede Waffe hat eigene Regeln!'
+  },
+  {
+    id:'A5', part:'Teil A: Allgemeines', partColor:'#118AB2',
+    text:'Welche Waffen sind reine Stoßwaffen? (Man darf nur stechen, nicht schlagen!)',
+    type:'single',
+    options:[
+      {letter:'A', text:'Degen und Säbel', correct:false},
+      {letter:'B', text:'Florett und Degen', correct:true},
+      {letter:'C', text:'Säbel und Florett', correct:false},
+    ],
+    explanation:'Florett und Degen sind Stoßwaffen – man darf nur stechen! Beim Säbel darf man auch schlagen! 💪'
+  },
+  {
+    id:'A6', part:'Teil A: Allgemeines', partColor:'#118AB2',
+    text:'Welche Altersklassen gibt es im Deutschen Sportfechten?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'U11, U13, U15, U17', correct:true},
+      {letter:'B', text:'U20, Senioren, Veteranen', correct:true},
+      {letter:'C', text:'Anfänger, B-Jugend, A-Jugend', correct:false},
+      {letter:'D', text:'Schüler, Junioren, Meister', correct:false},
+    ],
+    explanation:'Im deutschen Fechten gibt es jetzt: U11, U13, U15, U17, U20, Senioren und Veteranen! 🎽'
+  },
+  {
+    id:'A7', part:'Teil A: Allgemeines', partColor:'#118AB2',
+    text:'Welche Dokumente muss ein Fechter vor dem Turnier vorlegen?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'📋 Fechtpass', correct:true},
+      {letter:'B', text:'🏷️ Lizenz (Jahresmarke oder Verlängerung)', correct:true},
+      {letter:'C', text:'💊 Gesundheitsattest (unter 18 Jahren)', correct:true},
+      {letter:'D', text:'🎒 Schulzeugnis', correct:false},
+    ],
+    explanation:'Ein Fechter braucht: Fechtpass, Lizenz und – wenn er unter 18 ist – auch ein Gesundheitsattest! 📄'
+  },
+  {
+    id:'A8', part:'Teil A: Allgemeines', partColor:'#118AB2',
+    text:'Welche Waffen (keine Miniwaffen) sind unterschiedlich lang?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Alle Waffen sind unterschiedlich lang', correct:false},
+      {letter:'B', text:'Degen und Florett', correct:false},
+      {letter:'C', text:'Säbel und Florett', correct:true},
+    ],
+    explanation:'Säbel und Florett sind unterschiedlich lang! Der Degen ist genauso lang wie das Florett. ⚔️'
+  },
+  {
+    id:'A9', part:'Teil A: Allgemeines', partColor:'#118AB2',
+    text:'Benenne die Linien der Fechtbahn!',
+    type:'dragdrop_a9',
+    explanation:'Die Fechtbahn hat: End-Linie (ganz außen), Start-Linie (wo die Fechter starten) und Mittel-Linie (in der Mitte)! 🏟️'
+  },
+  {
+    id:'A10', part:'Teil A: Allgemeines', partColor:'#118AB2',
+    text:'Trage die Maße der Fechtbahn zwischen den Pfeilen auf dem Antwortbogen ein (z.B. 3 m)!',
+    type:'dragdrop_a10',
+    explanation:'Die Fechtbahn ist 14 m lang: Von der End-Linie bis zur Start-Linie sind es je 5 m, dann je 2 m bis zur Mittel-Linie. Die Breite beträgt 1,5 m! 📏'
+  },
+
+  // TEIL B: Ausrüstung
+  {
+    id:'B1', part:'Teil B: Ausrüstung', partColor:'#7B5EA7',
+    text:'Was gehört alles zur Pflicht-Fechtkleidung?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'🥊 Maske', correct:true},
+      {letter:'B', text:'👕 Fechtjacke, Fechthose und Unterziehweste', correct:true},
+      {letter:'C', text:'🧤 Handschuh', correct:true},
+      {letter:'D', text:'👟 Spezielle Turnschuhe', correct:false},
+    ],
+    explanation:'Fechtkleidung: Maske, Fechtjacke, Fechthose, Unterziehweste und Handschuh! Das ist alles Pflicht! 🛡️'
+  },
+  {
+    id:'B2', part:'Teil B: Ausrüstung', partColor:'#7B5EA7',
+    text:'Auf welchen Kleidungsstücken muss das Prüfsiegel (Sicherheitsstempel) zu finden sein?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'🥊 Maske', correct:true},
+      {letter:'B', text:'👕 Fechtjacke und Fechthose', correct:true},
+      {letter:'C', text:'🦺 Unterziehweste', correct:true},
+      {letter:'D', text:'🧤 Handschuh', correct:false},
+    ],
+    explanation:'Das Prüfsiegel muss auf der Maske, Fechtjacke, Fechthose und Unterziehweste sein. Der Handschuh braucht kein Siegel! ✅'
+  },
+  {
+    id:'B3', part:'Teil B: Ausrüstung', partColor:'#7B5EA7',
+    text:'Wie viele Waffen und Körperkabel muss der Fechter an die Bahn mitbringen?',
+    type:'single',
+    options:[
+      {letter:'A', text:'2 Waffen, 1 Körperkabel', correct:false},
+      {letter:'B', text:'1 Waffe, 2 Körperkabel', correct:false},
+      {letter:'C', text:'2 Waffen, 2 Körperkabel', correct:true},
+    ],
+    explanation:'Der Fechter muss 2 Waffen UND 2 Körperkabel mitbringen – immer eine Ersatzwaffe und ein Ersatzkabel! 🔌'
+  },
+  {
+    id:'B4', part:'Teil B: Ausrüstung', partColor:'#7B5EA7',
+    text:'Wie schwer darf eine Waffe beim Waffencheck sein?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Degen 500g, Florett 500g', correct:false},
+      {letter:'B', text:'Degen 750g, Florett 500g', correct:true},
+      {letter:'C', text:'Degen 500g, Florett 750g', correct:false},
+    ],
+    explanation:'Der Degen darf bis 750 Gramm schwer sein, das Florett nur bis 500 Gramm! ⚖️'
+  },
+  {
+    id:'B5', part:'Teil B: Ausrüstung', partColor:'#7B5EA7',
+    text:'Was ist bei Fechthandschuhen besonders wichtig?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Die Farbe', correct:false},
+      {letter:'B', text:'Die Größe', correct:false},
+      {letter:'C', text:'Keine Löcher und keine Risse', correct:true},
+    ],
+    explanation:'Der Handschuh darf keine Löcher und keine Risse haben – das wäre gefährlich! Sicherheit geht vor! 🧤'
+  },
+  {
+    id:'B6', part:'Teil B: Ausrüstung', partColor:'#7B5EA7',
+    text:'Wie lang müssen Fechtstrümpfe sein?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Kurze Söckchen reichen', correct:false},
+      {letter:'B', text:'Strümpfe sind nicht nötig', correct:false},
+      {letter:'C', text:'Strümpfe müssen bis unter die Fechthose reichen', correct:true},
+    ],
+    explanation:'Fechtstrümpfe müssen lang sein – bis unter die Fechthose! Das schützt die Beine! 🧦'
+  },
+  {
+    id:'B7', part:'Teil B: Ausrüstung', partColor:'#7B5EA7',
+    text:'In welche drei Teile wird eine Fechtklinge unterteilt?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Griff, Klinge, Spitze', correct:false},
+      {letter:'B', text:'Klingenstärke, Klingenschwäche', correct:false},
+      {letter:'C', text:'Klingenstärke, Klingenmitte, Klingenschwäche', correct:true},
+    ],
+    explanation:'Die Klinge hat drei Teile: Klingenstärke (nahe am Griff), Klingenmitte (in der Mitte) und Klingenschwäche (an der Spitze)! ⚔️'
+  },
+
+  // TEIL C: Fechtkonventionen
+  {
+    id:'C1', part:'Teil C: Fechtkonventionen', partColor:'#E63946',
+    text:'Welche Waffe gehört zu welcher Trefferfläche? Bild 1 = kleiner roter Rumpf, Bild 2 = roter Oberkörper + Arme + Kopf, Bild 3 = ganzer Körper rot.',
+    type:'single',
+    visual:'target_areas',
+    options:[
+      {letter:'A', text:'1=Degen, 2=Florett, 3=Säbel', correct:false},
+      {letter:'B', text:'1=Florett, 2=Säbel, 3=Degen', correct:true},
+      {letter:'C', text:'1=Säbel, 2=Degen, 3=Florett', correct:false},
+    ],
+    explanation:'Florett (1): nur Rumpf. Säbel (2): Oberkörper, Arme, Kopf. Degen (3): ganzer Körper! 🎯'
+  },
+  {
+    id:'C2', part:'Teil C: Fechtkonventionen', partColor:'#E63946',
+    text:'Bei welchen Waffen gibt es ein Angriffsrecht? (Wer zuerst angreift, hat Vorrang!)',
+    type:'single',
+    options:[
+      {letter:'A', text:'Florett und Degen', correct:false},
+      {letter:'B', text:'Degen und Säbel', correct:false},
+      {letter:'C', text:'Florett und Säbel', correct:true},
+    ],
+    explanation:'Florett und Säbel haben ein Angriffsrecht. Beim Degen zählt einfach wer zuerst trifft! ⚡'
+  },
+  {
+    id:'C3', part:'Teil C: Fechtkonventionen', partColor:'#E63946',
+    text:'Womit beginnt ein Angriff beim Fechten?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Schritt vorwärts', correct:false},
+      {letter:'B', text:'Armstreckung (Arm ausstrecken)', correct:true},
+      {letter:'C', text:'Ausfallbein (vorwärts springen)', correct:false},
+    ],
+    explanation:'Ein Angriff beginnt immer mit der Armstreckung – erst Arm ausstrecken, dann den Rest! 💪'
+  },
+  {
+    id:'C4', part:'Teil C: Fechtkonventionen', partColor:'#E63946',
+    text:'Was ist eine Parade?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Der eigene Angriff nach der Verteidigung', correct:false},
+      {letter:'B', text:'Die Abwehr des gegnerischen Angriffs', correct:true},
+      {letter:'C', text:'Ein Angriff des Gegners', correct:false},
+    ],
+    explanation:'Eine Parade ist die Verteidigung! Man blockt den Angriff des Gegners mit der Klinge. 🛡️'
+  },
+  {
+    id:'C5', part:'Teil C: Fechtkonventionen', partColor:'#E63946',
+    text:'Was ist eine Riposte?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Der eigene Angriff nach erfolgreicher Verteidigung', correct:true},
+      {letter:'B', text:'Die Abwehr des Gegnerangriffs', correct:false},
+      {letter:'C', text:'Ein Angriff des Gegners', correct:false},
+    ],
+    explanation:'Eine Riposte ist der Gegenangriff nach einer Parade! Erst abwehren, dann zurückstechen! ⚡'
+  },
+  {
+    id:'C6', part:'Teil C: Fechtkonventionen', partColor:'#E63946',
+    text:'Welche Paraden gibt es beim Fechten? Wähle 4 richtige Paraden!',
+    type:'multi',
+    options:[
+      {letter:'A', text:'🛡️ Sixt', correct:true},
+      {letter:'B', text:'🛡️ Quart', correct:true},
+      {letter:'C', text:'🛡️ Oktav', correct:true},
+      {letter:'D', text:'🛡️ Septim', correct:true},
+      {letter:'E', text:'🛡️ Super', correct:false},
+    ],
+    explanation:'Es gibt viele Paraden: Sixt, Quart, Oktav und Septim – alle haben französische Namen! 🇫🇷'
+  },
+  {
+    id:'C7', part:'Teil C: Fechtkonventionen', partColor:'#E63946',
+    text:'Was ist die Mensur beim Fechten?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Der Abstand zum Gegner', correct:true},
+      {letter:'B', text:'Die Länge der Klinge', correct:false},
+      {letter:'C', text:'Die Zeit eines Gefechts', correct:false},
+    ],
+    explanation:'Mensur ist der Abstand zum Gegner! Ein guter Fechter kennt immer die richtige Mensur. 📏'
+  },
+  {
+    id:'C8', part:'Teil C: Fechtkonventionen', partColor:'#E63946',
+    text:'Was bedeutet "enge Mensur"?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Der Gegner kann mit Armstreckung treffen', correct:true},
+      {letter:'B', text:'Der Gegner kann mit Schritt und Ausfall treffen', correct:false},
+      {letter:'C', text:'Der Gegner ist sehr weit weg', correct:false},
+    ],
+    explanation:'Enge Mensur = der Gegner ist so nah, dass er nur den Arm ausstrecken muss, um zu treffen! 😮'
+  },
+  {
+    id:'C9', part:'Teil C: Fechtkonventionen', partColor:'#E63946',
+    text:'Was bedeutet "weite Mensur"?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Der Gegner kann mit Armstreckung treffen', correct:false},
+      {letter:'B', text:'Der Gegner kann mit Armstreckung und Ausfall treffen', correct:false},
+      {letter:'C', text:'Der Gegner kann mit Schritt vor, Armstreckung und Ausfall treffen', correct:true},
+    ],
+    explanation:'Weite Mensur = der Gegner ist weit weg und muss zuerst einen Schritt machen, dann den Arm strecken, dann ausfallen! 🏃'
+  },
+  {
+    id:'C10', part:'Teil C: Fechtkonventionen', partColor:'#E63946',
+    text:'Bedeutet beim Florett und Säbel eine farbige Lampe immer einen gültigen Treffer (und damit einen Punkt)?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Ja, immer!', correct:false},
+      {letter:'B', text:'Nein – es kommt auch aufs Treffervorrecht an', correct:true},
+      {letter:'C', text:'Nein, nur beim Florett', correct:false},
+    ],
+    explanation:'Nein! Beim Florett und Säbel gibt es Angriffsrecht. Der Kampfrichter entscheidet, wessen Treffer zählt! 🏳️'
+  },
+
+  // TEIL D: Verstöße und Strafen
+  {
+    id:'D1', part:'Teil D: Verstöße & Strafen', partColor:'#FF7F11',
+    text:'Was bedeutet eine gelbe Karte beim Fechten?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Straftreffer (der Gegner bekommt einen Punkt)', correct:false},
+      {letter:'B', text:'Ausschluss vom Turnier', correct:false},
+      {letter:'C', text:'🟡 Verwarnung', correct:true},
+    ],
+    explanation:'Gelbe Karte = Verwarnung! Das ist die erste Warnung. Beim nächsten Fehler gibt es eine rote Karte! ⚠️'
+  },
+  {
+    id:'D2', part:'Teil D: Verstöße & Strafen', partColor:'#FF7F11',
+    text:'Was bedeutet eine schwarze Karte beim Fechten?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Straftreffer (der Gegner bekommt einen Punkt)', correct:false},
+      {letter:'B', text:'⬛ Ausschluss vom Wettbewerb oder Turnier', correct:true},
+      {letter:'C', text:'Verwarnung', correct:false},
+    ],
+    explanation:'Schwarze Karte = Ausschluss! Das ist die schlimmste Strafe – man muss das Turnier verlassen! ❌'
+  },
+  {
+    id:'D3', part:'Teil D: Verstöße & Strafen', partColor:'#FF7F11',
+    text:'Was bedeutet eine rote Karte beim Fechten?',
+    type:'single',
+    options:[
+      {letter:'A', text:'🔴 Straftreffer (der Gegner bekommt einen Punkt)', correct:true},
+      {letter:'B', text:'Ausschluss vom Turnier', correct:false},
+      {letter:'C', text:'Verwarnung', correct:false},
+    ],
+    explanation:'Rote Karte = Straftreffer! Der Gegner bekommt direkt einen Punkt. Das ist sehr ärgerlich! 😬'
+  },
+  {
+    id:'D4', part:'Teil D: Verstöße & Strafen', partColor:'#FF7F11',
+    text:'Für welche Verstöße gibt es eine gelbe Karte?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'Keine Ersatzwaffe an der Bahn', correct:true},
+      {letter:'B', text:'Beleidigung des Kampfrichters', correct:false},
+      {letter:'C', text:'Absichtliches Schleifenlassen der Spitze auf der Bahn', correct:true},
+      {letter:'D', text:'Helm vergessen', correct:false},
+    ],
+    explanation:'Gelbe Karte gibt es für: keine Ersatzwaffe dabei und absichtliches Schleifenlassen der Spitze! 🟡'
+  },
+  {
+    id:'D5', part:'Teil D: Verstöße & Strafen', partColor:'#FF7F11',
+    text:'Ein Fechter hat schon eine gelbe Karte bekommen und macht noch einen Fehler. Was bekommt er mindestens?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Nochmal Gelb', correct:false},
+      {letter:'B', text:'🔴 Rot', correct:true},
+      {letter:'C', text:'Schwarz', correct:false},
+    ],
+    explanation:'Nach einer gelben Karte folgt mindestens eine rote! Die Strafen werden immer schlimmer. 📈'
+  },
+  {
+    id:'D6', part:'Teil D: Verstöße & Strafen', partColor:'#FF7F11',
+    text:'Für welche Verstöße gibt es eine schwarze Karte (Ausschluss)?',
+    type:'single',
+    options:[
+      {letter:'A', text:'⬛ Beleidigung des Kampfrichters', correct:true},
+      {letter:'B', text:'Dem Gegner den Rücken zudrehen', correct:false},
+      {letter:'C', text:'Rückwärtsgehen über die Endlinie', correct:false},
+    ],
+    explanation:'Die Beleidigung des Kampfrichters ist so schlimm, dass man direkt ausgeschlossen wird! Immer respektvoll sein! 🤝'
+  },
+  {
+    id:'D7', part:'Teil D: Verstöße & Strafen', partColor:'#FF7F11',
+    text:'Wie viele gelbe Karten kann ein Fechter in einem Gefecht bekommen?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Nur eine – egal welcher Verstoß danach kommt', correct:true},
+      {letter:'B', text:'Das entscheidet der Kampfrichter', correct:false},
+      {letter:'C', text:'Eine für jeden Verstoß', correct:false},
+    ],
+    explanation:'Nur EINE gelbe Karte pro Gefecht! Danach gibt es immer mindestens Rot! 🟡→🔴'
+  },
+
+  // TEIL E: Turnierablauf
+  {
+    id:'E1', part:'Teil E: Turnierablauf', partColor:'#06D6A0',
+    text:'Wo stellt sich der zuerst genannte Fechter nach dem Aufruf durch den Kampfrichter auf?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Rechts (aus Sicht des Kampfrichters)', correct:true},
+      {letter:'B', text:'Links im Tableau', correct:false},
+      {letter:'C', text:'Der kleinere Fechter steht immer links', correct:false},
+    ],
+    explanation:'Der zuerst genannte Fechter stellt sich rechts auf – aus Sicht des Kampfrichters! ➡️'
+  },
+  {
+    id:'E2', part:'Teil E: Turnierablauf', partColor:'#06D6A0',
+    text:'Auf wie viele Treffer wird beim Fechten gefochten?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'In der Runde: 5 Treffer', correct:true},
+      {letter:'B', text:'Im Direktausscheid (U17, U20, Senioren, Veteranen): 15 Treffer', correct:true},
+      {letter:'C', text:'Im Direktausscheid (U11, U13, U15): 10 Treffer', correct:true},
+      {letter:'D', text:'Im Direktausscheid immer 3 Treffer', correct:false},
+    ],
+    explanation:'In der Vorrunde immer 5 Treffer! Im Direktausscheid: U11/U13/U15 fechten auf 10 Treffer, U17/U20/Senioren/Veteranen auf 15 Treffer! ⚡'
+  },
+  {
+    id:'E3', part:'Teil E: Turnierablauf', partColor:'#06D6A0',
+    text:'Was müssen Fechter vor und nach dem Gefecht immer machen?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'🤺 Fechtgruß an der Startlinie', correct:true},
+      {letter:'B', text:'🤝 Dem Gegner die Hand geben', correct:true},
+      {letter:'C', text:'🔌 Den Melder ausschalten', correct:false},
+      {letter:'D', text:'🎵 Eine Hymne singen', correct:false},
+    ],
+    explanation:'Vor und nach dem Gefecht: Fechtgruß und dann Handschlag! Das ist faire Sportlichkeit! 🤝'
+  },
+  {
+    id:'E4', part:'Teil E: Turnierablauf', partColor:'#06D6A0',
+    text:'Was wird vor einem Gefecht vom Kampfrichter NICHT geprüft?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'Das Prüfzeichen auf der Maske (wird geprüft!)', correct:false},
+      {letter:'B', text:'🩺 Das Gesundheitsattest', correct:true},
+      {letter:'C', text:'📋 Der Fechtpass', correct:true},
+      {letter:'D', text:'Die Waffe', correct:false},
+    ],
+    explanation:'Der Kampfrichter prüft die Maske und Waffe, aber nicht den Fechtpass oder das Gesundheitsattest. Das wurde schon vorher geprüft! 📋'
+  },
+  {
+    id:'E5', part:'Teil E: Turnierablauf', partColor:'#06D6A0',
+    text:'Wie lange ist die Kampfzeit in einem Gefecht?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'Runde: 3 Minuten (alle Klassen)', correct:true},
+      {letter:'B', text:'Direktausscheid U17/U20/Senioren/Veteranen: 3×3 Minuten', correct:true},
+      {letter:'C', text:'Direktausscheid U11/U13/U15: 2×3 Minuten', correct:true},
+      {letter:'D', text:'Direktausscheid: immer 1×5 Minuten', correct:false},
+    ],
+    explanation:'Runde: immer 3 Minuten! Im Direktausscheid: U11/U13/U15 fechten 2×3 Min, U17/U20/Senioren/Veteranen fechten 3×3 Min! ⏱️'
+  },
+  {
+    id:'E6', part:'Teil E: Turnierablauf', partColor:'#06D6A0',
+    text:'Was passiert, wenn es nach Ablauf der Zeit unentschieden steht?',
+    type:'multi',
+    options:[
+      {letter:'A', text:'Beide Fechter haben verloren', correct:false},
+      {letter:'B', text:'🎲 Vorteil wird ausgelost', correct:true},
+      {letter:'C', text:'1 Minute Verlängerung – wer dann noch vorne liegt (oder gewürfelt hat), gewinnt', correct:true},
+      {letter:'D', text:'Das Gefecht wird wiederholt', correct:false},
+    ],
+    explanation:'Unentschieden: Erst losen, wer Vorteil hat, dann 1 Minute verlängern. Wer trifft, gewinnt. Wenn immer noch gleich, gewinnt der mit Vorteil! 🎲'
+  },
+  {
+    id:'E7', part:'Teil E: Turnierablauf', partColor:'#06D6A0',
+    text:'Wie geht das Gefecht nach einem ungültigen Treffer weiter?',
+    type:'single',
+    options:[
+      {letter:'A', text:'An der Stelle, wo das Gefecht unterbrochen wurde', correct:true},
+      {letter:'B', text:'An der Startlinie', correct:false},
+      {letter:'C', text:'In der Mitte der Bahn', correct:false},
+    ],
+    explanation:'Nach einem ungültigen Treffer geht es genau da weiter, wo das Gefecht unterbrochen wurde! 📍'
+  },
+  {
+    id:'E8', part:'Teil E: Turnierablauf', partColor:'#06D6A0',
+    text:'Wie weit müssen die Fechter nach einem ungültigen Treffer voneinander stehen?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Klingen dürfen sich nicht überkreuzen, wenn beide in Fechtstellung stehen', correct:false},
+      {letter:'B', text:'2 Meter Abstand zwischen den Startlinien', correct:false},
+      {letter:'C', text:'Klingen dürfen sich nicht überkreuzen, wenn beide in Fechtstellung stehen und den Arm strecken', correct:true},
+    ],
+    explanation:'Die Fechter müssen so weit auseinander stehen, dass sich die Klingen nicht überkreuzen, wenn beide in Fechtstellung stehen und den Arm strecken! 🤺'
+  },
+  {
+    id:'E9', part:'Teil E: Turnierablauf', partColor:'#06D6A0',
+    text:'Wie zeigt man dem Kampfrichter, dass man eine Kampfunterbrechung möchte?',
+    type:'single',
+    options:[
+      {letter:'A', text:'Man dreht sich zum Kampfrichter und spricht ihn an', correct:false},
+      {letter:'B', text:'Man hebt den waffenfreien Arm hoch', correct:true},
+      {letter:'C', text:'Es gibt keine Kampfunterbrechung', correct:false},
+    ],
+    explanation:'Man hebt den Arm hoch – den Arm ohne Waffe! So weiß der Kampfrichter, dass man pausieren möchte! 🙋'
+  },
+  {
+    id:'E10', part:'Teil E: Turnierablauf', partColor:'#06D6A0',
+    text:'Trage folgende Gefechte in das Tableau ein!',
+    type:'dragdrop',
+    explanation:'V = Victoire = Gewonnen! D = Défaite = Verloren! Max hat 5:2 gegen Moritz gewonnen, also V5 für Max und D2 für Moritz. Kurt vs. Peter: 2:2 nach Zeit → Losentscheid für Peter → D2/V2. Und so weiter! 🇫🇷'
+  },
+];
+
+// =============================================
+// GLOSSARY
+// =============================================
+const GLOSSARY = [
+  // --- WAFFEN ---
+  { term:'Florett', emoji:'🌸', group:'⚔️ Die Waffen', def:'Das Florett ist eine dünne, biegsame Waffe. Beim Florett darfst du nur den Rumpf (Bauch und Rücken) treffen. Du darfst nur stoßen – also stechen, nicht schlagen!' },
+  { term:'Degen', emoji:'⚔️', group:'⚔️ Die Waffen', def:'Der Degen ist eine steifere Waffe. Beim Degen darfst du den ganzen Körper treffen! Wer zuerst trifft, bekommt den Punkt. Es gibt kein Angriffsrecht.' },
+  { term:'Säbel', emoji:'🗡️', group:'⚔️ Die Waffen', def:'Der Säbel ist eine Waffe, mit der du stechen und schneiden darfst. Du darfst Oberkörper, Arme und Kopf treffen. Wie beim Florett gibt es Angriffsrecht.' },
+  { term:'Klinge', emoji:'📏', group:'⚔️ Die Waffen', def:'Die Klinge ist der lange Metallteil der Waffe. Sie ist in drei Teile aufgeteilt: Klingenstärke (nahe am Griff), Klingenmitte (in der Mitte) und Klingenschwäche (an der Spitze).' },
+  { term:'Klingenstärke', emoji:'💪', group:'⚔️ Die Waffen', def:'Die Klingenstärke ist der Teil der Klinge, der am nächsten am Griff ist. Er ist der dickste und stärkste Teil der Klinge. Damit macht man Paraden.' },
+  { term:'Klingenmitte', emoji:'➡️', group:'⚔️ Die Waffen', def:'Die Klingenmitte ist der mittlere Teil der Klinge. Sie liegt zwischen der Klingenstärke und der Klingenschwäche.' },
+  { term:'Klingenschwäche', emoji:'🎯', group:'⚔️ Die Waffen', def:'Die Klingenschwäche ist das dünne Ende der Klinge, also die Spitze. Mit der Klingenschwäche trifft man den Gegner!' },
+  { term:'Griff', emoji:'✊', group:'⚔️ Die Waffen', def:'Der Griff ist der Teil der Waffe, den du in der Hand hältst. Es gibt verschiedene Griffformen: den geraden Griff und den Pistolengriff.' },
+  { term:'Glocke', emoji:'🔔', group:'⚔️ Die Waffen', def:'Die Glocke ist die runde Schutzscheibe zwischen Griff und Klinge. Sie schützt die Hand vor Treffern des Gegners. Beim Florett ist sie klein, beim Degen viel größer!' },
+  { term:'Spitze', emoji:'🔴', group:'⚔️ Die Waffen', def:'Die Spitze ist das Ende der Klinge. Beim Florett und Degen ist sie mit einem kleinen Knopf gesichert, damit man nicht verletzt wird. Sie hat auch einen elektrischen Kontakt.' },
+  { term:'Körperkabel', emoji:'🔌', group:'⚔️ Die Waffen', def:'Das Körperkabel verbindet die Waffe mit der Meldeanlage. Es läuft unter der Fechtjacke. Du musst immer zwei davon mitbringen – eins zum Wechseln, falls das andere kaputt geht!' },
+
+  // --- AUSRÜSTUNG ---
+  { term:'Maske', emoji:'🥊', group:'🛡️ Die Ausrüstung', def:'Die Maske schützt dein Gesicht und deinen Kopf. Sie hat ein Metallgitter vorne und eine gepolsterte Innenseite. Ohne Maske darf man nicht fechten!' },
+  { term:'Fechtjacke', emoji:'🥋', group:'🛡️ Die Ausrüstung', def:'Die Fechtjacke ist eine dicke Schutzjacke. Sie schützt deinen Oberkörper. Beim Florett hat sie auch eine leitende Schicht (Metallweste), die Treffer anzeigt.' },
+  { term:'Unterziehweste', emoji:'🦺', group:'🛡️ Die Ausrüstung', def:'Die Unterziehweste wird unter der Fechtjacke getragen. Sie gibt extra Schutz auf der Seite, auf der du fechtst – also auf der Waffenhand-Seite.' },
+  { term:'Fechthose', emoji:'👖', group:'🛡️ Die Ausrüstung', def:'Die Fechthose ist eine dicke, gepolsterte Hose bis zum Knie. Sie schützt deine Beine. Die Fechtstrümpfe müssen bis unter die Fechthose reichen.' },
+  { term:'Handschuh', emoji:'🧤', group:'🛡️ Die Ausrüstung', def:'Der Fechthandschuh schützt deine Waffenhand. Er darf keine Löcher oder Risse haben! Nur die Waffenhand braucht einen Handschuh.' },
+  { term:'Fechtstrümpfe', emoji:'🧦', group:'🛡️ Die Ausrüstung', def:'Fechtstrümpfe sind lange Strümpfe, die bis unter die Fechthose reichen müssen. Sie schützen das Bein zwischen Schuh und Hose.' },
+  { term:'Prüfsiegel', emoji:'✅', group:'🛡️ Die Ausrüstung', def:'Das Prüfsiegel ist ein Stempel auf der Ausrüstung. Er zeigt, dass die Ausrüstung sicher ist. Es muss auf der Maske, Fechtjacke, Fechthose und Unterziehweste sein.' },
+  { term:'Melder', emoji:'🔔', group:'🛡️ Die Ausrüstung', def:'Der Melder ist ein elektrisches Gerät, das Treffer anzeigt. Wenn jemand getroffen wird, leuchtet eine farbige Lampe auf. Beim Florett und Säbel gibt es auch weiße Lampen für ungültige Treffer.' },
+
+  // --- FECHTBAHN ---
+  { term:'Fechtbahn', emoji:'🏟️', group:'🏟️ Die Fechtbahn', def:'Die Fechtbahn ist der lange, schmale Streifen, auf dem gefochten wird. Sie ist 14 Meter lang und 1,5 Meter breit. Sie hat End-Linien, Start-Linien und eine Mittel-Linie.' },
+  { term:'Mittel-Linie', emoji:'🟠', group:'🏟️ Die Fechtbahn', def:'Die Mittel-Linie ist genau in der Mitte der Fechtbahn. Von ihr aus sind es nach beiden Seiten je 7 Meter bis zur End-Linie.' },
+  { term:'Start-Linie', emoji:'⬛', group:'🏟️ Die Fechtbahn', def:'Die Start-Linie ist der Platz, an dem die Fechter zu Beginn des Gefechts stehen. Sie ist 2 Meter von der Mittel-Linie entfernt. Nach jedem Unterbrechung stellen sich die Fechter wieder hier auf.' },
+  { term:'End-Linie', emoji:'🔴', group:'🏟️ Die Fechtbahn', def:'Die End-Linie ist die hinterste Linie der Fechtbahn. Wenn ein Fechter mit beiden Füßen über die End-Linie tritt, bekommt der Gegner einen Punkt!' },
+
+  // --- FECHTBEWEGUNGEN ---
+  { term:'Parade', emoji:'🛡️', group:'🤺 Fechttechnik', def:'Eine Parade ist eine Verteidigung! Du blockst die Klinge des Gegners mit deiner eigenen Klinge. Es gibt viele Paraden: Quart, Sixt, Oktav, Septim...' },
+  { term:'Riposte', emoji:'⚡', group:'🤺 Fechttechnik', def:'Nach einer Parade kannst du sofort zurückstechen – das ist die Riposte! Erst abwehren (Parade), dann angreifen (Riposte). Sehr wichtig in einem Gefecht!' },
+  { term:'Angriff', emoji:'🏃', group:'🤺 Fechttechnik', def:'Ein Angriff beginnt immer mit der Armstreckung – erst den Arm ausstrecken, dann den Schritt oder Ausfall machen. Wer zuerst den Arm streckt, hat das Angriffsrecht!' },
+  { term:'Ausfall', emoji:'🦵', group:'🤺 Fechttechnik', def:'Der Ausfall ist eine schnelle Vorwärtsbewegung, bei der du das vordere Bein nach vorne streckst und das hintere Bein am Boden lässt. So kannst du weit nach vorne reichen!' },
+  { term:'Armstreckung', emoji:'💪', group:'🤺 Fechttechnik', def:'Die Armstreckung ist das Ausstrecken des Waffenarmes in Richtung Gegner. Damit beginnt jeder Angriff! Ohne Armstreckung zuerst gibt es kein Angriffsrecht.' },
+  { term:'Mensur', emoji:'📏', group:'🤺 Fechttechnik', def:'Mensur ist der Abstand zwischen dir und dem Gegner. Enge Mensur = sehr nah (Gegner trifft mit Armstreckung). Weite Mensur = weit weg (Gegner braucht Schritt + Ausfall).' },
+  { term:'Enge Mensur', emoji:'😮', group:'🤺 Fechttechnik', def:'Enge Mensur bedeutet: Dein Gegner ist so nah, dass er nur den Arm ausstrecken muss, um dich zu treffen. Sehr gefährlich – schnell reagieren!' },
+  { term:'Weite Mensur', emoji:'😌', group:'🤺 Fechttechnik', def:'Weite Mensur bedeutet: Dein Gegner ist weit weg. Er muss zuerst einen Schritt machen, dann den Arm strecken und einen Ausfall machen, um dich zu treffen. Du hast mehr Zeit!' },
+  { term:'Fechtgruß', emoji:'🤺', group:'🤺 Fechttechnik', def:'Der Fechtgruß ist eine Begrüßung vor und nach dem Gefecht. Du hebst deine Waffe und grüßt den Gegner und den Kampfrichter. Das gehört zum fairen Sport dazu!' },
+  { term:'Quart', emoji:'🛡️', group:'🤺 Fechttechnik', def:'Quart ist eine Parade! Du schützt damit die Innenseite deines Körpers. Der Name kommt aus dem Französischen und bedeutet "vier".' },
+  { term:'Sixt', emoji:'🛡️', group:'🤺 Fechttechnik', def:'Sixt ist eine Parade! Du schützt damit die Außenseite deines Körpers. Der Name kommt aus dem Französischen und bedeutet "sechs".' },
+  { term:'Oktav', emoji:'🛡️', group:'🤺 Fechttechnik', def:'Oktav ist eine Parade! Du schützt damit die untere Außenseite deines Körpers. Der Name kommt aus dem Französischen und bedeutet "acht".' },
+  { term:'Septim', emoji:'🛡️', group:'🤺 Fechttechnik', def:'Septim ist eine Parade! Du schützt damit die untere Innenseite deines Körpers. Der Name kommt aus dem Französischen und bedeutet "sieben".' },
+  { term:'Angriffsrecht', emoji:'⚖️', group:'🤺 Fechttechnik', def:'Das Angriffsrecht bestimmt beim Florett und Säbel, wessen Treffer zählt. Wer zuerst angreift (Arm streckt), hat das Angriffsrecht. Wenn beide treffen, bekommt nur der mit Angriffsrecht den Punkt.' },
+  { term:'Treffervorrecht', emoji:'🏅', group:'🤺 Fechttechnik', def:'Treffervorrecht ist dasselbe wie Angriffsrecht. Wer zuerst den Arm streckt und angreift, hat das Treffervorrecht. Beim Degen gibt es kein Treffervorrecht – dort zählt immer wer zuerst trifft.' },
+
+  // --- TURNIER ---
+  { term:'Tableau', emoji:'📊', group:'🏆 Das Turnier', def:'Das Tableau ist eine Tabelle, in der alle Ergebnisse einer Runde eingetragen werden. V heißt Victoire (gewonnen), D heißt Défaite (verloren)!' },
+  { term:'Fechtpass', emoji:'📋', group:'🏆 Das Turnier', def:'Der Fechtpass ist wie ein Ausweis für Fechter! Darin steht wer du bist, in welchem Verein du fechtst und dass du die Sicherheitsprüfung bestanden hast.' },
+  { term:'Lizenz', emoji:'🏷️', group:'🏆 Das Turnier', def:'Die Lizenz (auch Jahresmarke genannt) ist eine Erlaubnis zum Wettkampf. Sie wird jedes Jahr neu ausgestellt. Ohne Lizenz darf man an Turnieren nicht teilnehmen.' },
+  { term:'Gesundheitsattest', emoji:'🩺', group:'🏆 Das Turnier', def:'Das Gesundheitsattest ist ein Zettel vom Arzt, der bestätigt, dass du gesund genug bist zum Fechten. Es ist Pflicht für alle Fechter unter 18 Jahren.' },
+  { term:'Direktausscheid', emoji:'🥊', group:'🏆 Das Turnier', def:'Der Direktausscheid ist die K.O.-Runde im Turnier. Wer verliert, scheidet aus. Es wird auf 10 oder 15 Treffer gefochten (je nach Altersklasse). Spannendes Fechten!' },
+  { term:'Runde', emoji:'🔄', group:'🏆 Das Turnier', def:'In der Vorrunde fechtet jeder gegen mehrere Gegner. Es wird auf 5 Treffer gefochten und die Zeit läuft 3 Minuten. Danach kommen die Besten in den Direktausscheid.' },
+  { term:'Kampfrichter', emoji:'🎌', group:'🏆 Das Turnier', def:'Der Kampfrichter leitet das Gefecht. Er sagt "En garde! Prêts? Allez!" und entscheidet, wessen Treffer zählt. Man muss den Kampfrichter immer respektieren!' },
+  { term:'Gefecht', emoji:'⚔️', group:'🏆 Das Turnier', def:'Ein Gefecht ist ein Kampf zwischen zwei Fechtern. Es endet, wenn die Zeit abgelaufen ist oder ein Fechter die nötige Anzahl an Treffern erreicht hat.' },
+  { term:'Victoire', emoji:'🏆', group:'🏆 Das Turnier', def:'Victoire ist das französische Wort für Sieg! Im Tableau steht V für Victoire. Wenn du ein Gefecht gewinnst, bekommst du ein V eingetragen.' },
+  { term:'Défaite', emoji:'😔', group:'🏆 Das Turnier', def:'Défaite ist das französische Wort für Niederlage. Im Tableau steht D für Défaite. Auch aus Niederlagen kann man viel lernen – nicht aufgeben!' },
+
+  // --- KARTEN ---
+  { term:'Gelbe Karte', emoji:'🟡', group:'🚦 Karten & Strafen', def:'Eine gelbe Karte ist eine Verwarnung. Man bekommt sie zum Beispiel, wenn man keine Ersatzwaffe dabei hat oder die Waffe absichtlich schleift. Nach einer gelben Karte kommt mindestens Rot!' },
+  { term:'Rote Karte', emoji:'🔴', group:'🚦 Karten & Strafen', def:'Eine rote Karte bedeutet Straftreffer! Der Gegner bekommt direkt einen Punkt. Sie kommt nach einer gelben Karte oder bei schlimmeren Verstößen.' },
+  { term:'Schwarze Karte', emoji:'⬛', group:'🚦 Karten & Strafen', def:'Die schwarze Karte ist die schlimmste Strafe! Du wirst vom Wettbewerb ausgeschlossen. Sie gibt es z.B. bei Beleidigung des Kampfrichters. Immer fair und respektvoll bleiben!' },
+  { term:'Straftreffer', emoji:'😬', group:'🚦 Karten & Strafen', def:'Ein Straftreffer wird vergeben, wenn jemand eine rote Karte bekommt. Der Gegner erhält dann direkt einen Punkt – ohne zu fechten!' },
+
+  // --- VERBÄNDE ---
+  { term:'FIE', emoji:'🌍', group:'🏛️ Verbände', def:'FIE steht für "Fédération Internationale d\'Escrime" – das ist der internationale Fechter-Verband. Alle Länder der Welt sind Mitglied. Die FIE macht die internationalen Regeln.' },
+  { term:'DFB', emoji:'🇩🇪', group:'🏛️ Verbände', def:'DFB steht für "Deutschen Fechter-Bund" – das ist der nationale Fechter-Verband in Deutschland. Er organisiert alle deutschen Turniere und sorgt dafür, dass die Regeln eingehalten werden.' },
+
+  // --- FRANZÖISCHE FECHTBEFEHLE ---
+  { term:'En garde!', emoji:'🤺', group:'🇫🇷 Französische Befehle', def:'"En garde" bedeutet "In Fechtstellung!". Das ruft der Kampfrichter zu Beginn jedes Gefechts. Du stellst dich in die richtige Fechtposition.' },
+  { term:'Prêts?', emoji:'❓', group:'🇫🇷 Französische Befehle', def:'"Prêts?" bedeutet "Bereit?". Das fragt der Kampfrichter nach "En garde". Du nickst oder sagst nichts, wenn du bereit bist.' },
+  { term:'Allez!', emoji:'🚀', group:'🇫🇷 Französische Befehle', def:'"Allez!" bedeutet "Los!". Das ruft der Kampfrichter, wenn das Gefecht beginnen soll. Ab jetzt darf man angreifen!' },
+  { term:'Halte!', emoji:'✋', group:'🇫🕺 Französische Befehle', def:'"Halte!" bedeutet "Stopp!". Das ruft der Kampfrichter, wenn das Gefecht unterbrochen wird – zum Beispiel nach einem Treffer oder bei einem Regelverstoß.' },
+];
+
+// =============================================
+// BADGES
+// =============================================
+const BADGES = [
+  { id:'first', icon:'🌟', name:'Erste Antwort!', desc:'Erste Frage beantwortet', req: s => s.totalAnswered >= 1 },
+  { id:'five', icon:'🎯', name:'5 Fragen!', desc:'5 Fragen beantwortet', req: s => s.totalAnswered >= 5 },
+  { id:'ten', icon:'🏅', name:'10 Fragen!', desc:'10 Fragen beantwortet', req: s => s.totalAnswered >= 10 },
+  { id:'twenty', icon:'🥈', name:'20 Fragen!', desc:'20 Fragen beantwortet', req: s => s.totalAnswered >= 20 },
+  { id:'all', icon:'🏆', name:'Alle Fragen!', desc:'Alle 30 Fragen beantwortet', req: s => s.totalAnswered >= 30 },
+  { id:'perfect', icon:'💎', name:'Perfekt!', desc:'5 Fragen in Folge richtig', req: s => s.streak >= 5 },
+  { id:'master', icon:'🦊', name:'Fecht-Fuchs!', desc:'80% aller Fragen richtig', req: s => s.totalAnswered > 0 && s.totalCorrect / s.totalAnswered >= 0.8 },
+  { id:'equip', icon:'⚔️', name:'Ausrüstungs-Profi', desc:'Alle B-Fragen richtig', req: s => ((s.partCorrect && s.partCorrect['Teil B: Ausrüstung']) || 0) >= 7 },
+  { id:'rules', icon:'📜', name:'Regelkenner', desc:'Alle D-Fragen richtig', req: s => ((s.partCorrect && s.partCorrect['Teil D: Verstöße & Strafen']) || 0) >= 7 },
+];
+
+// =============================================
+// PROGRESS / STATE
+// =============================================
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem('fechtSpielProgress') || '{}'); } catch { return {}; }
+}
+function saveProgress(p) {
+  try { localStorage.setItem('fechtSpielProgress', JSON.stringify(p)); } catch {}
+}
+let progress = loadProgress();
+if (!progress.totalAnswered) progress.totalAnswered = 0;
+if (!progress.totalCorrect) progress.totalCorrect = 0;
+if (!progress.streak) progress.streak = 0;
+if (!progress.bestStreak) progress.bestStreak = 0;
+if (!progress.partCorrect) progress.partCorrect = {};
+if (!progress.partAnswered) progress.partAnswered = {};
+if (!progress.earnedBadges) progress.earnedBadges = [];
+if (!progress.questionStats) progress.questionStats = {};
+
+function updateHomeProgress() {
+  const pct = Math.round((progress.totalAnswered / QUESTIONS.length) * 100);
+  const bar = document.getElementById('homeProgressBar');
+  if (bar) bar.style.width = Math.min(pct, 100) + '%';
+  const lbl = document.getElementById('homeProgressLabel');
+  if (lbl) {
+    if (progress.totalAnswered === 0) lbl.textContent = 'Noch keine Fragen beantwortet';
+    else lbl.textContent = `${progress.totalCorrect} von ${progress.totalAnswered} richtig beantwortet`;
+  }
+}
+
+// =============================================
+// SCREEN MANAGER
+// =============================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function goHome() {
+  showScreen('home');
+  updateHomeProgress();
+  checkBadges();
+}
+
+// =============================================
+// QUESTION RENDERER
+// =============================================
+function shuffleArray(arr) {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+
+function renderVisual(q) {
+  if (!q.visual) return '';
+  if (q.visual === 'target_areas') {
+    return `<div class="fencing-strip" style="background:#fff5f5;">
+      <p style="font-size:0.8rem;font-weight:700;color:#888;margin-bottom:8px;">🎯 Trefferflächen (rot markiert):</p>
+      <div class="target-figure">
+        <div style="text-align:center;">
+          <div style="position:relative;display:inline-block;">
+            <svg width="60" height="90" viewBox="0 0 60 90">
+              <circle cx="30" cy="10" r="8" fill="#333"/>
+              <rect x="15" y="20" width="30" height="30" rx="4" fill="#E63946"/>
+              <rect x="10" y="22" width="12" height="6" rx="3" fill="#333"/>
+              <rect x="38" y="22" width="12" height="6" rx="3" fill="#333"/>
+              <rect x="20" y="50" width="8" height="30" rx="3" fill="#333"/>
+              <rect x="32" y="50" width="8" height="30" rx="3" fill="#333"/>
+            </svg>
+          </div>
+          <div style="font-size:0.75rem;font-weight:800;color:#E63946;margin-top:4px;">Figur 1</div>
+          <div style="font-size:0.65rem;color:#888;">nur Rumpf rot</div>
+        </div>
+        <div style="text-align:center;">
+          <svg width="60" height="90" viewBox="0 0 60 90">
+            <circle cx="30" cy="10" r="8" fill="#E63946"/>
+            <rect x="15" y="20" width="30" height="30" rx="4" fill="#E63946"/>
+            <rect x="10" y="22" width="12" height="6" rx="3" fill="#E63946"/>
+            <rect x="38" y="22" width="12" height="6" rx="3" fill="#E63946"/>
+            <rect x="20" y="50" width="8" height="30" rx="3" fill="#333"/>
+            <rect x="32" y="50" width="8" height="30" rx="3" fill="#333"/>
+          </svg>
+          <div style="font-size:0.75rem;font-weight:800;color:#E63946;margin-top:4px;">Figur 2</div>
+          <div style="font-size:0.65rem;color:#888;">Oberk. + Arme + Kopf</div>
+        </div>
+        <div style="text-align:center;">
+          <svg width="60" height="90" viewBox="0 0 60 90">
+            <circle cx="30" cy="10" r="8" fill="#E63946"/>
+            <rect x="15" y="20" width="30" height="30" rx="4" fill="#E63946"/>
+            <rect x="10" y="22" width="12" height="6" rx="3" fill="#E63946"/>
+            <rect x="38" y="22" width="12" height="6" rx="3" fill="#E63946"/>
+            <rect x="20" y="50" width="8" height="30" rx="3" fill="#E63946"/>
+            <rect x="32" y="50" width="8" height="30" rx="3" fill="#E63946"/>
+          </svg>
+          <div style="font-size:0.75rem;font-weight:800;color:#E63946;margin-top:4px;">Figur 3</div>
+          <div style="font-size:0.65rem;color:#888;">ganzer Körper</div>
+        </div>
+      </div>
+    </div>`;
+  }
+  if (q.visual === 'strip_labels') {
+    return `<div class="fencing-strip">
+      <p style="font-size:0.8rem;font-weight:700;color:#118AB2;margin-bottom:8px;">🏟️ Die Fechtbahn:</p>
+      <div style="position:relative;background:white;border-radius:8px;padding:16px 8px;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;border-top:3px solid #333;border-bottom:3px solid #333;padding:8px 0;position:relative;">
+          <div style="position:absolute;left:0;top:-10px;bottom:-10px;width:3px;background:#E63946;"></div>
+          <div style="position:absolute;left:35%;top:-10px;bottom:-10px;width:2px;background:#333;border-left:2px dashed #333;"></div>
+          <div style="position:absolute;left:50%;top:-10px;bottom:-10px;width:3px;background:#FF7F11;margin-left:-1px;"></div>
+          <div style="position:absolute;right:35%;top:-10px;bottom:-10px;width:2px;background:#333;border-right:2px dashed #333;"></div>
+          <div style="position:absolute;right:0;top:-10px;bottom:-10px;width:3px;background:#E63946;"></div>
+          <div style="height:30px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.65rem;font-weight:800;color:#888;">
+          <span style="color:#E63946;">End-<br/>Linie</span>
+          <span style="color:#333;">Start-<br/>Linie</span>
+          <span style="color:#FF7F11;">Mittel-<br/>Linie</span>
+          <span style="color:#333;">Start-<br/>Linie</span>
+          <span style="color:#E63946;">End-<br/>Linie</span>
+        </div>
+      </div>
+    </div>`;
+  }
+  if (q.visual === 'strip_measure') {
+    return `<div class="fencing-strip">
+      <p style="font-size:0.8rem;font-weight:700;color:#118AB2;margin-bottom:8px;">📏 Maße der Fechtbahn:</p>
+      <div style="background:white;border-radius:8px;padding:12px;font-size:0.75rem;font-weight:700;text-align:center;">
+        <div style="border:2px solid #333;border-radius:4px;padding:10px;position:relative;margin:8px 0;">
+          <div style="display:flex;justify-content:space-around;align-items:center;gap:4px;">
+            <span style="color:#E63946;">5m</span>
+            <span style="color:#333;">|</span>
+            <span style="color:#FF7F11;">2m</span>
+            <span style="color:#FF7F11;">2m</span>
+            <span style="color:#333;">|</span>
+            <span style="color:#E63946;">5m</span>
+          </div>
+          <div style="margin-top:6px;color:#888;">← Gesamt: ? Meter →</div>
+        </div>
+        <div style="color:#666;">Breite: 1,5 Meter</div>
+      </div>
+    </div>`;
+  }
+  if (q.visual === 'tableau') {
+    return `<div class="fencing-strip" style="background:#f0fff8;">
+      <p style="font-size:0.8rem;font-weight:700;color:#06D6A0;margin-bottom:8px;">📊 Beispiel Tableau:</p>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.75rem;font-weight:700;">
+          <thead><tr style="background:#06D6A0;color:white;">
+            <td style="padding:6px 8px;border-radius:6px 0 0 0;">Name</td>
+            <td style="padding:6px 8px;text-align:center;">Nr</td>
+            <td style="padding:6px 8px;text-align:center;">1</td>
+            <td style="padding:6px 8px;text-align:center;">2</td>
+          </tr></thead>
+          <tbody>
+            <tr style="background:#E8FFF5;"><td style="padding:6px 8px;">Max</td><td style="text-align:center;">1</td><td style="text-align:center;">—</td><td style="text-align:center;background:#FFE8E8;color:#E63946;">D2</td></tr>
+            <tr style="background:white;"><td style="padding:6px 8px;">Moritz</td><td style="text-align:center;">2</td><td style="text-align:center;background:#E8FFF5;color:#06D6A0;">V5</td><td style="text-align:center;">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.7rem;color:#888;margin-top:6px;">V = ||? | D = ||?</p>
+    </div>`;
+  }
+  return '';
+}
+
+function renderQuestion(q, shuffledOptions, containerId, buttonsId, mode, onAnswer) {
+  const correctCount = shuffledOptions.filter(o => o.correct).length;
+  const container = document.getElementById(containerId);
+  const btns = document.getElementById(buttonsId);
+  
+  let html = `
+    <div class="question-card">
+      <span class="question-part-badge" style="background:${q.partColor}20;color:${q.partColor};">${q.part}</span>
+      ${renderVisual(q)}
+      <div class="question-text">${q.text}</div>
+      <div class="answer-count-badge">
+        ${correctCount === 1 ? '☝️ 1 Antwort ist richtig.' : `✌️ ${correctCount} Antworten sind richtig!`}
+      </div>
+      <div id="optionsArea">`;
+  
+  shuffledOptions.forEach((opt, i) => {
+    html += `<div class="answer-option" id="opt_${i}" onclick="toggleOpt(${i}, '${q.type}')">
+      <div class="option-circle" id="optCircle_${i}">${opt.letter}</div>
+      <span>${opt.text}</span>
+    </div>`;
+  });
+  
+  html += `</div></div>`;
+  container.innerHTML = html;
+  
+  btns.innerHTML = `<button class="big-btn btn-primary" id="checkBtn" onclick="checkAnswer_${mode}()" disabled style="opacity:0.5">Antwort prüfen ✓</button>`;
+  
+  // Store state
+  window._currentSelected = new Set();
+  window._currentOptions = shuffledOptions;
+  window._currentQ = q;
+  window._currentOnAnswer = onAnswer;
+  window._answered = false;
+}
+
+function toggleOpt(i, type) {
+  if (window._answered) return;
+  if (type === 'single') {
+    window._currentSelected.clear();
+    document.querySelectorAll('.answer-option').forEach((el, idx) => {
+      el.classList.remove('selected');
+      document.getElementById('optCircle_' + idx).textContent = window._currentOptions[idx].letter;
+    });
+    window._currentSelected.add(i);
+    document.getElementById('opt_' + i).classList.add('selected');
+    document.getElementById('optCircle_' + i).textContent = '✓';
+  } else {
+    if (window._currentSelected.has(i)) {
+      window._currentSelected.delete(i);
+      document.getElementById('opt_' + i).classList.remove('selected');
+      document.getElementById('optCircle_' + i).textContent = window._currentOptions[i].letter;
+    } else {
+      window._currentSelected.add(i);
+      document.getElementById('opt_' + i).classList.add('selected');
+      document.getElementById('optCircle_' + i).textContent = '✓';
+    }
+  }
+  const btn = document.getElementById('checkBtn');
+  if (btn) {
+    btn.disabled = window._currentSelected.size === 0;
+    btn.style.opacity = window._currentSelected.size === 0 ? '0.5' : '1';
+  }
+}
+
+function evaluateAnswer() {
+  const opts = window._currentOptions;
+  const sel = window._currentSelected;
+  const correct = new Set(opts.map((o, i) => o.correct ? i : -1).filter(i => i >= 0));
+  
+  let allCorrectSelected = [...correct].every(i => sel.has(i));
+  let noWrongSelected = [...sel].every(i => correct.has(i));
+  let isCorrect = allCorrectSelected && noWrongSelected;
+  let isPartial = !isCorrect && [...sel].some(i => correct.has(i));
+  
+  window._answered = true;
+  
+  // Color options
+  opts.forEach((o, i) => {
+    const el = document.getElementById('opt_' + i);
+    const circ = document.getElementById('optCircle_' + i);
+    if (o.correct && sel.has(i)) { el.classList.add('correct'); circ.textContent = '✅'; }
+    else if (!o.correct && sel.has(i)) { el.classList.add('wrong'); circ.textContent = '❌'; }
+    else if (o.correct && !sel.has(i)) { el.classList.add('reveal-correct'); circ.textContent = '→'; }
+  });
+  
+  return { isCorrect, isPartial };
+}
+
+const PRAISE = ['Super gemacht! 🌟', 'Toll! Du bist ein Profi! 🏆', 'Richtig! Weiter so! ⭐', 'Klasse! Du lernst schnell! 🦊', 'Prima! Das war leicht für dich! 💪', 'Fantastisch! 🎉'];
+const PRAISE_WRONG = ['Fast! Schau dir die richtige Antwort an! 💡', 'Noch nicht ganz – aber das übst du! 📚', 'Kein Problem – beim nächsten Mal klappt\'s! 🌈', 'Guter Versuch! Jetzt weißt du es! 😊'];
+const PRAISE_PARTIAL = ['Fast richtig! Du warst schon nah dran! 🌟', 'Ein paar Antworten fehlten noch – gleich hast du\'s! 💪'];
+
+// =============================================
+// LEARN MODE
+// =============================================
+let learnIdx = 0;
+let learnShuffled = [];
+let learnCorrect = 0;
+let learnOptShuffled = [];
+
+function showLernMode() {
+  learnIdx = 0;
+  learnCorrect = 0;
+  learnShuffled = shuffleArray(QUESTIONS);
+  showScreen('learnScreen');
+  showLearnQuestion();
+}
+
+function showLearnQuestion() {
+  const q = learnShuffled[learnIdx];
+  learnOptShuffled = shuffleArray(q.options || []);
+  
+  const total = learnShuffled.length;
+  document.getElementById('learnQNum').textContent = `Frage ${learnIdx+1} von ${total}`;
+  document.getElementById('learnScore').textContent = `⭐ ${learnCorrect} richtig`;
+  document.getElementById('learnProgressFill').style.width = (learnIdx / total * 100) + '%';
+
+  if (q.type === 'dragdrop')      { renderDragDropQuestion('learnContent', 'learnButtons', 'learn'); document.getElementById('checkBtn').setAttribute('onclick','checkAnswerLearn()'); }
+  else if (q.type === 'dragdrop_a9')  { renderDragDropA9('learnContent', 'learnButtons'); document.getElementById('checkBtn').setAttribute('onclick','checkAnswerLearn()'); }
+  else if (q.type === 'dragdrop_a10') { renderDragDropA10('learnContent', 'learnButtons'); document.getElementById('checkBtn').setAttribute('onclick','checkAnswerLearn()'); }
+  else { renderQuestion(q, learnOptShuffled, 'learnContent', 'learnButtons', 'learn', null); document.getElementById('checkBtn').setAttribute('onclick','checkAnswerLearn()'); }
+}
+
+function checkAnswerLearn() {
+  const q = window._currentQ || learnShuffled[learnIdx];
+  let isCorrect, isPartial;
+
+  if (q.type === 'dragdrop')          { ({ isCorrect, isPartial } = checkDragDropAnswer()); window._answered = true; }
+  else if (q.type === 'dragdrop_a9')  { ({ isCorrect, isPartial } = checkA9Answer());       window._answered = true; }
+  else if (q.type === 'dragdrop_a10') { ({ isCorrect, isPartial } = checkA10Answer());      window._answered = true; }
+  else { ({ isCorrect, isPartial } = evaluateAnswer()); }
+  
+  updateProgressStats(q, isCorrect);
+  
+  let msg = '';
+  if (isCorrect) {
+    msg = `<div class="feedback-box success"><span class="feedback-icon">🎉</span><div><strong>${PRAISE[Math.floor(Math.random()*PRAISE.length)]}</strong><br>${q.explanation}</div></div>`;
+    learnCorrect++;
+  } else if (isPartial) {
+    msg = `<div class="feedback-box partial"><span class="feedback-icon">🌟</span><div><strong>${PRAISE_PARTIAL[Math.floor(Math.random()*PRAISE_PARTIAL.length)]}</strong><br>${q.explanation}</div></div>`;
+  } else {
+    msg = `<div class="feedback-box error"><span class="feedback-icon">💡</span><div><strong>${PRAISE_WRONG[Math.floor(Math.random()*PRAISE_WRONG.length)]}</strong><br>${q.explanation}</div></div>`;
+  }
+  
+  document.getElementById('learnContent').innerHTML += msg;
+  document.getElementById('learnContent').scrollTop = 999999;
+  
+  const isLast = learnIdx >= learnShuffled.length - 1;
+  document.getElementById('learnButtons').innerHTML = `
+    ${isLast
+      ? `<button class="big-btn btn-green" onclick="showLearnEnd()">🏁 Fertig!</button>`
+      : `<button class="big-btn btn-primary" onclick="learnNext()">Weiter →</button>`}
+    <button class="big-btn btn-secondary" onclick="showLearnQuestion()">🔄 Nochmal üben</button>
+  `;
+}
+
+function learnNext() {
+  learnIdx++;
+  showLearnQuestion();
+}
+
+function showLearnEnd() {
+  const pct = Math.round(learnCorrect / learnShuffled.length * 100);
+  let stars = pct >= 80 ? '⭐⭐⭐' : pct >= 50 ? '⭐⭐' : '⭐';
+  showEndScreen(learnCorrect, learnShuffled.length, stars, 'learn');
+}
+
+// =============================================
+// QUIZ MODE
+// =============================================
+let quizIdx = 0, quizQuestions = [], quizCorrect = 0, quizOptShuffled = [];
+
+function showQuizSelect() { showScreen('quizSelect'); }
+
+function startQuiz(count) {
+  quizIdx = 0; quizCorrect = 0;
+  const shuffled = shuffleArray(QUESTIONS);
+  quizQuestions = count >= 999 ? shuffled : shuffled.slice(0, Math.min(count, shuffled.length));
+  showScreen('quizScreen');
+  showQuizQuestion();
+}
+
+function showQuizQuestion() {
+  const q = quizQuestions[quizIdx];
+  quizOptShuffled = shuffleArray(q.options || []);
+  const total = quizQuestions.length;
+  
+  document.getElementById('quizQNum').textContent = `Frage ${quizIdx+1} von ${total}`;
+  document.getElementById('quizScore').textContent = `⭐ ${quizCorrect} richtig`;
+  document.getElementById('quizProgressFill').style.width = (quizIdx / total * 100) + '%';
+
+  if (q.type === 'dragdrop')          { renderDragDropQuestion('quizContent', 'quizButtons', 'quiz'); document.getElementById('checkBtn').setAttribute('onclick','checkAnswerQuiz()'); }
+  else if (q.type === 'dragdrop_a9')  { renderDragDropA9('quizContent', 'quizButtons');  document.getElementById('checkBtn').setAttribute('onclick','checkAnswerQuiz()'); }
+  else if (q.type === 'dragdrop_a10') { renderDragDropA10('quizContent', 'quizButtons'); document.getElementById('checkBtn').setAttribute('onclick','checkAnswerQuiz()'); }
+  else { renderQuestion(q, quizOptShuffled, 'quizContent', 'quizButtons', 'quiz', null); document.getElementById('checkBtn').setAttribute('onclick','checkAnswerQuiz()'); }
+}
+
+function checkAnswerQuiz() {
+  const q = window._currentQ || quizQuestions[quizIdx];
+  let isCorrect, isPartial;
+
+  if (q.type === 'dragdrop')          { ({ isCorrect, isPartial } = checkDragDropAnswer()); window._answered = true; }
+  else if (q.type === 'dragdrop_a9')  { ({ isCorrect, isPartial } = checkA9Answer());       window._answered = true; }
+  else if (q.type === 'dragdrop_a10') { ({ isCorrect, isPartial } = checkA10Answer());      window._answered = true; }
+  else { ({ isCorrect, isPartial } = evaluateAnswer()); }
+  
+  updateProgressStats(q, isCorrect);
+  
+  let msg = '';
+  if (isCorrect) {
+    msg = `<div class="feedback-box success"><span class="feedback-icon">🎉</span><div><strong>${PRAISE[Math.floor(Math.random()*PRAISE.length)]}</strong><br>${q.explanation}</div></div>`;
+    quizCorrect++;
+  } else if (isPartial) {
+    msg = `<div class="feedback-box partial"><span class="feedback-icon">🌟</span><div><strong>Fast! Ein paar Antworten fehlen noch.</strong><br>${q.explanation}</div></div>`;
+  } else {
+    msg = `<div class="feedback-box error"><span class="feedback-icon">💡</span><div><strong>${PRAISE_WRONG[Math.floor(Math.random()*PRAISE_WRONG.length)]}</strong><br>${q.explanation}</div></div>`;
+  }
+  
+  document.getElementById('quizContent').innerHTML += msg;
+  document.getElementById('quizContent').scrollTop = 999999;
+  
+  const isLast = quizIdx >= quizQuestions.length - 1;
+  document.getElementById('quizButtons').innerHTML = isLast
+    ? `<button class="big-btn btn-green" onclick="showQuizEnd()">🏁 Ergebnis sehen!</button>`
+    : `<button class="big-btn btn-primary" onclick="quizNext()">Weiter →</button>`;
+}
+
+function quizNext() { quizIdx++; showQuizQuestion(); }
+
+function showQuizEnd() {
+  const pct = Math.round(quizCorrect / quizQuestions.length * 100);
+  let stars = pct >= 80 ? '⭐⭐⭐' : pct >= 50 ? '⭐⭐' : '⭐';
+  showEndScreen(quizCorrect, quizQuestions.length, stars, 'quiz');
+  if (pct === 100) triggerConfetti();
+}
+
+// =============================================
+// END SCREEN
+// =============================================
+function showEndScreen(correct, total, stars, mode) {
+  showScreen('endScreen');
+  const pct = Math.round(correct / total * 100);
+  let message = '';
+  if (pct === 100) message = '🏆 Perfekt! Du hast ALLE Fragen richtig! Du bist ein Fecht-Superstar!';
+  else if (pct >= 80) message = '🌟 Super! Das war wirklich toll! Du bist fast ein Fechtprofi!';
+  else if (pct >= 60) message = '😊 Gut gemacht! Du lernst schnell – noch ein bisschen üben!';
+  else if (pct >= 40) message = '💪 Weiter so! Das Üben macht dich besser – nicht aufgeben!';
+  else message = '🦊 Ferdi sagt: Üben, üben, üben – du schaffst das!';
+  
+  document.getElementById('endContent').innerHTML = `
+    <div style="font-size:5rem;margin-bottom:16px;">🦊</div>
+    <div class="end-stars">${stars}</div>
+    <div class="end-score">${correct}/${total}</div>
+    <div class="end-label">${pct}% richtig!</div>
+    <div class="end-message">${message}</div>
+    <button class="big-btn btn-primary" onclick="${mode === 'quiz' ? 'showQuizSelect()' : 'showLernMode()'}">🔄 Nochmal spielen!</button>
+    <button class="big-btn btn-secondary" onclick="goHome()">🏠 Zur Startseite</button>
+  `;
+  checkBadges();
+}
+
+// =============================================
+// PROGRESS TRACKING
+// =============================================
+function updateProgressStats(q, isCorrect) {
+  progress.totalAnswered++;
+  if (!progress.questionStats[q.id]) progress.questionStats[q.id] = { answered: 0, correct: 0 };
+  progress.questionStats[q.id].answered++;
+  
+  if (!progress.partAnswered[q.part]) progress.partAnswered[q.part] = 0;
+  progress.partAnswered[q.part]++;
+  
+  if (isCorrect) {
+    progress.totalCorrect++;
+    progress.questionStats[q.id].correct++;
+    progress.streak++;
+    if (!progress.partCorrect[q.part]) progress.partCorrect[q.part] = 0;
+    progress.partCorrect[q.part]++;
+    if (progress.streak > progress.bestStreak) progress.bestStreak = progress.streak;
+  } else {
+    progress.streak = 0;
+  }
+  saveProgress(progress);
+}
+
+// =============================================
+// WÖRTER
+// =============================================
+function showWoerter() {
+  showScreen('woerterScreen');
+  renderWoerter('');
+}
+
+function renderWoerter(filter) {
+  const q = filter.toLowerCase().trim();
+  const filtered = q ? GLOSSARY.filter(g => g.term.toLowerCase().includes(q) || g.def.toLowerCase().includes(q)) : GLOSSARY;
+
+  // Group by category
+  const groups = {};
+  filtered.forEach(g => {
+    const grp = g.group || '📖 Sonstiges';
+    if (!groups[grp]) groups[grp] = [];
+    groups[grp].push(g);
+  });
+
+  const groupColors = {
+    '⚔️ Die Waffen':          '#E63946',
+    '🛡️ Die Ausrüstung':      '#7B5EA7',
+    '🏟️ Die Fechtbahn':       '#118AB2',
+    '🤺 Fechttechnik':        '#FF7F11',
+    '🏆 Das Turnier':         '#06D6A0',
+    '🚦 Karten & Strafen':    '#FFD166',
+    '🏛️ Verbände':            '#118AB2',
+    '🇫🇷 Französische Befehle': '#FF6B9D',
+  };
+
+  let html = `
+    <div style="margin-bottom:16px;">
+      <div style="position:relative;">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1.2rem;">🔍</span>
+        <input
+          type="text"
+          placeholder="Begriff suchen..."
+          value="${filter}"
+          oninput="renderWoerter(this.value)"
+          style="width:100%;padding:14px 14px 14px 44px;border-radius:var(--radius-sm);border:3px solid #DDD;font-family:'Nunito','Trebuchet MS',Arial,sans-serif;font-size:1rem;font-weight:700;outline:none;background:white;"
+          onfocus="this.style.borderColor='var(--purple)'"
+          onblur="this.style.borderColor='#DDD'"
+        >
+      </div>
+      <p style="font-size:0.8rem;color:#AAA;margin-top:6px;text-align:center;">${filtered.length} von ${GLOSSARY.length} Begriffen</p>
+    </div>`;
+
+  if (filtered.length === 0) {
+    html += `<div style="text-align:center;padding:30px;color:#AAA;font-weight:700;">🦊 Ferdi findet keinen Begriff dazu. Versuch ein anderes Wort!</div>`;
+  } else {
+    Object.entries(groups).forEach(([grpName, entries]) => {
+      const color = groupColors[grpName] || '#888';
+      html += `<div style="margin-bottom:6px;">
+        <div style="background:${color};color:white;border-radius:14px 14px 0 0;padding:10px 16px;font-weight:800;font-size:0.95rem;font-family:'Baloo 2','Trebuchet MS',Arial,sans-serif;">${grpName}</div>`;
+      entries.forEach(g => {
+        html += `<div class="glossary-card" style="border-left-color:${color};border-radius:0;margin-bottom:0;border-bottom:1px solid #F0F0F0;">
+          <div class="glossary-term"><span class="glossary-emoji">${g.emoji}</span>${g.term}</div>
+          <div class="glossary-def">${g.def}</div>
+        </div>`;
+      });
+      html += `<div style="margin-bottom:16px;"></div>`;
+    });
+  }
+
+  document.getElementById('woerterContent').innerHTML = html;
+}
+
+// =============================================
+// FORTSCHRITT
+// =============================================
+function showFortschritt() {
+  showScreen('fortschrittScreen');
+  const pct = progress.totalAnswered > 0 ? Math.round(progress.totalCorrect / progress.totalAnswered * 100) : 0;
+  
+  let weakQ = Object.entries(progress.questionStats)
+    .filter(([id, s]) => s.answered > 0 && s.correct / s.answered < 0.5)
+    .map(([id]) => QUESTIONS.find(q => q.id === id))
+    .filter(Boolean).slice(0, 3);
+  
+  let weakHtml = weakQ.length > 0
+    ? weakQ.map(q => `<div style="background:#FFF5F5;border-radius:12px;padding:12px;margin-bottom:8px;border-left:4px solid #E63946;font-size:0.9rem;font-weight:700;">${q.id}: ${q.text.substring(0, 60)}...</div>`).join('')
+    : '<p style="color:#888;font-size:0.9rem;">🎉 Super! Keine schwachen Stellen gefunden!</p>';
+  
+  let partHtml = '';
+  const parts = [...new Set(QUESTIONS.map(q => q.part))];
+  parts.forEach(part => {
+    const answered = progress.partAnswered[part] || 0;
+    const correct = progress.partCorrect[part] || 0;
+    const partPct = answered > 0 ? Math.round(correct / answered * 100) : 0;
+    const color = partPct >= 80 ? '#06D6A0' : partPct >= 50 ? '#FFD166' : '#E63946';
+    partHtml += `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;font-weight:700;margin-bottom:4px;">
+        <span>${part}</span><span style="color:${color}">${answered > 0 ? partPct + '%' : '—'}</span>
+      </div>
+      <div style="background:#EEE;border-radius:50px;height:8px;">
+        <div style="width:${partPct}%;background:${color};height:100%;border-radius:50px;transition:width 1s;"></div>
+      </div>
+    </div>`;
+  });
+  
+  document.getElementById('fortschrittContent').innerHTML = `
+    <div class="stat-grid" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-number" style="color:var(--blue)">${progress.totalAnswered}</div>
+        <div class="stat-label">Fragen beantwortet</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:var(--green)">${progress.totalCorrect}</div>
+        <div class="stat-label">Richtig beantwortet</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:var(--orange)">${progress.streak}</div>
+        <div class="stat-label">Aktuelle Serie 🔥</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:var(--purple)">${progress.bestStreak}</div>
+        <div class="stat-label">Beste Serie 🏆</div>
+      </div>
+    </div>
+    <div class="question-card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:12px;font-family:'Baloo 2','Trebuchet MS',Arial,sans-serif;">📊 Nach Themen</h3>
+      ${partHtml}
+    </div>
+    <div class="question-card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:12px;font-family:'Baloo 2','Trebuchet MS',Arial,sans-serif;">💪 Noch üben!</h3>
+      ${weakHtml}
+    </div>
+    <button class="big-btn btn-secondary" onclick="document.getElementById('confirmOverlay').style.display='flex'">🗑️ Fortschritt zurücksetzen</button>
+  `;
+}
+
+// =============================================
+// BELOHNUNGEN
+// =============================================
+function checkBadges() {
+  BADGES.forEach(b => {
+    if (!progress.earnedBadges.includes(b.id) && b.req(progress)) {
+      progress.earnedBadges.push(b.id);
+      saveProgress(progress);
+    }
+  });
+}
+
+function showBelohnungen() {
+  checkBadges();
+  showScreen('belohnungenScreen');
+  let html = `
+    <p style="font-weight:700;color:#888;margin-bottom:16px;">🏆 Sammle alle Abzeichen!</p>
+    <div class="badge-grid">
+  `;
+  BADGES.forEach(b => {
+    const earned = progress.earnedBadges.includes(b.id);
+    html += `<div class="badge-card ${earned ? 'earned' : ''}">
+      <span class="badge-icon">${earned ? b.icon : '🔒'}</span>
+      <div class="badge-name">${b.name}</div>
+      <div style="font-size:0.65rem;color:#888;margin-top:2px;">${b.desc}</div>
+    </div>`;
+  });
+  html += `</div>
+    <div style="margin-top:20px;background:white;border-radius:var(--radius-sm);padding:18px;box-shadow:var(--shadow);">
+      <h3 style="font-family:'Baloo 2','Trebuchet MS',Arial,sans-serif;margin-bottom:8px;">🔥 Deine Serie</h3>
+      <p style="font-size:2rem;font-weight:900;font-family:'Baloo 2','Trebuchet MS',Arial,sans-serif;color:var(--orange);">${progress.streak} in Folge!</p>
+      <p style="font-size:0.85rem;color:#888;">Beste Serie: ${progress.bestStreak}</p>
+      <p style="font-size:0.85rem;color:#888;margin-top:6px;">Earned badges: ${progress.earnedBadges.length}/${BADGES.length}</p>
+    </div>`;
+  document.getElementById('belohnungenContent').innerHTML = html;
+}
+
+// =============================================
+// CONFETTI
+// =============================================
+function triggerConfetti() {
+  const wrap = document.getElementById('confettiWrap');
+  wrap.innerHTML = '';
+  const colors = ['#E63946','#FFD166','#06D6A0','#118AB2','#7B5EA7','#FF6B9D'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    const size = 8 + Math.random() * 12;
+    el.style.cssText = `
+      position:absolute;width:${size}px;height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+      left:${Math.random()*100}%;top:-20px;
+      animation:fall ${1.5+Math.random()*2}s linear ${Math.random()*0.5}s forwards;
+    `;
+    wrap.appendChild(el);
+  }
+  const style = document.createElement('style');
+  style.textContent = `@keyframes fall {
+    to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }`;
+  document.head.appendChild(style);
+  setTimeout(() => { wrap.innerHTML = ''; }, 4000);
+}
+
+// =============================================
+// DRAG & DROP TABLEAU (E10)
+// =============================================
+// Gefechte aus der PDF:
+// Max mit Moritz 5:2 → Max V5, Moritz D2
+// Kurt mit Peter 2:2 (Losentscheid Peter) → Kurt D2/V2, Peter V2/D2
+// Peter mit Max 1:5 → Peter D1, Max V5
+// Kurt mit Moritz 5:0 → Kurt V5, Moritz D0
+// Moritz mit Peter 3:5 → Moritz D3, Peter V5
+// Kurt mit Max 5:3 → Kurt V5, Max D3
+
+const DD_PLAYERS = ['Max','Moritz','Kurt','Peter'];
+// [row-name][col-nr]: correct token label
+// nr: 1=Max,2=Moritz,3=Kurt,4=Peter
+// cell [row][col] where row!=col
+const DD_SOLUTION = {
+  // Max (nr1): vs Moritz=V5, vs Kurt=D3, vs Peter=V5
+  'Max-2':'V5','Max-3':'D3','Max-4':'V5',
+  // Moritz (nr2): vs Max=D2, vs Kurt=D0, vs Peter=D3
+  'Moritz-1':'D2','Moritz-3':'D0','Moritz-4':'D3',
+  // Kurt (nr3): vs Max=V5, vs Moritz=V5, vs Peter=V2
+  'Kurt-1':'V5','Kurt-2':'V5','Kurt-4':'V2',
+  // Peter (nr4): vs Max=D1, vs Moritz=V5, vs Kurt=D2
+  'Peter-1':'D1','Peter-2':'V5','Peter-3':'D2',
+};
+// All tokens that need placing (unique labels with color class)
+const DD_TOKENS = [
+  // wins
+  {label:'V5',cls:'win'},{label:'V5',cls:'win'},{label:'V5',cls:'win'},{label:'V5',cls:'win'},
+  // losses / misc
+  {label:'D2',cls:'lose'},{label:'D3',cls:'lose'},{label:'D3',cls:'lose'},
+  {label:'D0',cls:'lose'},{label:'D1',cls:'lose'},{label:'D2',cls:'lose'},
+  {label:'V2',cls:'win'},{label:'V2',cls:'win'},
+];
+
+let ddState = {}; // key = 'Player-colNr', value = token label placed
+let ddDragging = null; // currently dragged token index
+let ddGhost = null;
+
+function renderDragDropQuestion(containerId, buttonsId, mode) {
+  ddState = {};
+  window._currentQ = QUESTIONS.find(q => q.id === 'E10');
+  window._answered = false;
+  const container = document.getElementById(containerId);
+  const btns = document.getElementById(buttonsId);
+
+  // Build tokens (shuffle)
+  const tokens = shuffleArray(DD_TOKENS.map((t,i) => ({...t, idx:i})));
+
+  let html = `
+    <div class="question-card">
+      <span class="question-part-badge" style="background:#06D6A020;color:#06D6A0;">Teil E: Turnierablauf</span>
+      <div class="question-text">Trage folgende Gefechte in das Tableau ein!</div>
+      <div class="answer-count-badge">🖱️ Ziehe die richtigen Ergebnisse in die freien Felder!</div>
+
+      <div class="dd-info">
+        📋 <strong>Die Gefechte:</strong><br>
+        Max – Moritz: <strong>5:2</strong> &nbsp;|&nbsp; Kurt – Peter: <strong>2:2</strong> (Losentscheid für Peter → D2/V2)<br>
+        Peter – Max: <strong>1:5</strong> &nbsp;|&nbsp; Kurt – Moritz: <strong>5:0</strong><br>
+        Moritz – Peter: <strong>3:5</strong> &nbsp;|&nbsp; Kurt – Max: <strong>5:3</strong>
+      </div>
+
+      <div class="dd-legend">
+        <div class="dd-legend-item"><div class="dd-legend-dot" style="background:var(--green)"></div>V = Victoire (Gewonnen)</div>
+        <div class="dd-legend-item"><div class="dd-legend-dot" style="background:var(--red)"></div>D = Défaite (Verloren)</div>
+      </div>
+
+      <div class="dd-label">📦 Verfügbare Ergebnisse – zieh sie ins Tableau:</div>
+      <div class="dd-tokens" id="ddTokenBank">`;
+
+  tokens.forEach((t) => {
+    html += `<div class="dd-token ${t.cls}" id="ddtok_${t.idx}" draggable="true"
+      data-idx="${t.idx}" data-label="${t.label}"
+      ondragstart="ddDragStart(event,${t.idx})"
+      ontouchstart="ddTouchStart(event,${t.idx})"
+      ontouchmove="ddTouchMove(event)"
+      ontouchend="ddTouchEnd(event)"
+      >${t.label}</div>`;
+  });
+
+  html += `</div>
+      <table class="dd-tableau">
+        <thead><tr>
+          <th>Name</th><th>Nr</th><th>1 Max</th><th>2 Moritz</th><th>3 Kurt</th><th>4 Peter</th>
+        </tr></thead>
+        <tbody>`;
+
+  DD_PLAYERS.forEach((player, pi) => {
+    const nr = pi + 1;
+    html += `<tr><td class="name-cell">${player}</td><td style="background:#F8FFF8;font-weight:800;">${nr}</td>`;
+    DD_PLAYERS.forEach((opp, oi) => {
+      const colNr = oi + 1;
+      if (player === opp) {
+        html += `<td class="self-cell">—</td>`;
+      } else {
+        const key = `${player}-${colNr}`;
+        html += `<td class="dd-drop-cell" id="ddc_${key}"
+          ondragover="ddDragOver(event,'${key}')"
+          ondragleave="ddDragLeave(event,'${key}')"
+          ondrop="ddDrop(event,'${key}')"
+          onclick="ddClickClear('${key}')"
+          data-key="${key}"><span class="dd-cell-content"></span></td>`;
+      }
+    });
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>
+      <p style="font-size:0.78rem;color:#AAA;text-align:center;margin-bottom:4px;">💡 Auf ein Feld tippen / klicken entfernt das Ergebnis wieder.</p>
+    </div>`;
+
+  container.innerHTML = html;
+  btns.innerHTML = `<button class="big-btn btn-primary" id="checkBtn" onclick="checkDragDrop_${mode}()">Antwort prüfen ✓</button>`;
+
+  // store tokens list for reference
+  window._ddTokens = tokens;
+}
+
+function ddDragStart(e, idx) {
+  ddDragging = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', idx);
+  setTimeout(() => { const el = document.getElementById('ddtok_'+idx); if(el) el.style.opacity='0.4'; }, 0);
+}
+
+function ddDragOver(e, key) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  (function(e,c){if(e)e.classList.add(c)})(document.getElementById('ddc_'+key),'drag-over');
+}
+
+function ddDragLeave(e, key) {
+  (function(e,c){if(e)e.classList.remove(c)})(document.getElementById('ddc_'+key),'drag-over');
+}
+
+function ddDrop(e, key) {
+  e.preventDefault();
+  (function(e,c){if(e)e.classList.remove(c)})(document.getElementById('ddc_'+key),'drag-over');
+  const idx = parseInt(e.dataTransfer.getData('text/plain'));
+  const tok = window._ddTokens.find(t => t.idx === idx);
+  if (!tok) return;
+  // Return previous occupant if any
+  if (ddState[key]) {
+    const prevLabel = ddState[key].label;
+    const prevIdx = ddState[key].idx;
+    const prevEl = document.getElementById('ddtok_'+prevIdx);
+    if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity=''; }
+  }
+  // If token was in another cell, clear that cell
+  Object.keys(ddState).forEach(k => {
+    if (ddState[k] && ddState[k].idx === idx) { ddSetCell(k, null); }
+  });
+  ddSetCell(key, tok);
+  const srcEl = document.getElementById('ddtok_'+idx);
+  if (srcEl) { srcEl.classList.add('used'); srcEl.style.opacity=''; }
+}
+
+function ddClickClear(key) {
+  if (!ddState[key]) return;
+  const prevIdx = ddState[key].idx;
+  const prevEl = document.getElementById('ddtok_'+prevIdx);
+  if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity=''; }
+  ddSetCell(key, null);
+}
+
+function ddSetCell(key, tok) {
+  const cell = document.getElementById('ddc_'+key);
+  if (!cell) return;
+  if (!tok) {
+    delete ddState[key];
+    cell.querySelector('.dd-cell-content').textContent = '';
+    cell.className = 'dd-drop-cell';
+    cell.setAttribute('ondragover', `ddDragOver(event,'${key}')`);
+    cell.setAttribute('ondragleave', `ddDragLeave(event,'${key}')`);
+    cell.setAttribute('ondrop', `ddDrop(event,'${key}')`);
+    cell.setAttribute('onclick', `ddClickClear('${key}')`);
+  } else {
+    ddState[key] = tok;
+    const content = cell.querySelector('.dd-cell-content');
+    content.textContent = tok.label;
+    cell.classList.remove('drag-over');
+    cell.classList.add(tok.cls === 'win' ? 'filled-win' : 'filled-lose');
+  }
+}
+
+// ---- Touch drag support ----
+let _touchTokIdx = null;
+function ddTouchStart(e, idx) {
+  _touchTokIdx = idx;
+  showDDGhost(window((window._ddTokens ? window._ddTokens.find(function(t){return t.idx===idx;}) : null) || {label:''}).label);
+}
+function ddTouchMove(e) {
+  e.preventDefault();
+  const touch = e.touches[0];
+  moveDDGhost(touch.clientX, touch.clientY);
+  document.querySelectorAll('.dd-drop-cell').forEach(c => c.classList.remove('drag-over'));
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  if ((el && el.classList && el.classList.contains('dd-drop-cell'))) el.classList.add('drag-over');
+  else if ((el && el.closest && el.closest('.dd-drop-cell'))) el.closest('.dd-drop-cell').classList.add('drag-over');
+}
+function ddTouchEnd(e) {
+  hideDDGhost();
+  document.querySelectorAll('.dd-drop-cell').forEach(c => c.classList.remove('drag-over'));
+  const touch = e.changedTouches[0];
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const cell = (el && el.closest && el.closest('.dd-drop-cell')) || ((el && el.classList && el.classList.contains('dd-drop-cell')) ? el : null);
+  if (cell && _touchTokIdx !== null) {
+    const key = cell.dataset.key;
+    const tok = (window._ddTokens ? window._ddTokens.find(function(t){return t => t.idx === _touchTokIdx;}) : null);
+    if (tok && key) {
+      if (ddState[key]) {
+        const prevIdx = ddState[key].idx;
+        const prevEl = document.getElementById('ddtok_'+prevIdx);
+        if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity=''; }
+      }
+      Object.keys(ddState).forEach(k => { if (ddState[k] && ddState[k].idx === _touchTokIdx) ddSetCell(k, null); });
+      ddSetCell(key, tok);
+      const srcEl = document.getElementById('ddtok_'+_touchTokIdx);
+      if (srcEl) srcEl.classList.add('used');
+    }
+  }
+  _touchTokIdx = null;
+}
+
+function checkDragDropAnswer() {
+  // Check all required cells
+  let allFilled = true, allCorrect = true;
+  Object.keys(DD_SOLUTION).forEach(key => {
+    const cell = document.getElementById('ddc_'+key);
+    if (!cell) return;
+    const placed = ddState[key];
+    if (!placed) { allFilled = false; cell.classList.add('wrong-final'); return; }
+    if (placed.label === DD_SOLUTION[key]) {
+      cell.classList.add('correct-final');
+    } else {
+      cell.classList.add('wrong-final');
+      allCorrect = false;
+    }
+  });
+  return { isCorrect: allFilled && allCorrect, isPartial: !allFilled || !allCorrect };
+}
+
+// =============================================
+// DRAG & DROP A9 – Benenne die Linien
+// =============================================
+// 5 drop zones: leftmost=End-Linie, 2nd=Start-Linie, middle=Mittel-Linie, 4th=Start-Linie, rightmost=End-Linie
+const A9_ZONES = [
+  { id:'a9z0', label:'End-Linie',    correct:'End-Linie' },
+  { id:'a9z1', label:'Start-Linie',  correct:'Start-Linie' },
+  { id:'a9z2', label:'Mittel-Linie', correct:'Mittel-Linie' },
+  { id:'a9z3', label:'Start-Linie',  correct:'Start-Linie' },
+  { id:'a9z4', label:'End-Linie',    correct:'End-Linie' },
+];
+const A9_TOKENS = ['End-Linie','Mittel-Linie','Start-Linie','Torlinie','End-Linie','Start-Linie'];
+
+let a9State = {}; // zoneId -> token label
+let a9TouchIdx = null;
+
+function renderDragDropA9(containerId, buttonsId) {
+  a9State = {};
+  window._currentQ = QUESTIONS.find(q => q.id === 'A9');
+  window._answered = false;
+
+  const tokens = shuffleArray(A9_TOKENS.map((t, i) => ({ label: t, idx: i })));
+
+  let html = `<div class="question-card">
+    <span class="question-part-badge" style="background:#118AB220;color:#118AB2;">Teil A: Allgemeines</span>
+    <div class="question-text">Benenne die Linien der Fechtbahn!</div>
+    <div class="answer-count-badge">🖱️ Ziehe die richtigen Namen auf die Pfeile!</div>
+
+    <div class="dd-info">🏟️ Schau dir die Fechtbahn an und ziehe die Linien-Namen auf die Pfeile!</div>
+
+    <!-- FECHTBAHN GRAFIK MIT DROP-ZONES -->
+    <div style="background:#f0f4ff;border-radius:16px;padding:16px 8px;margin:12px 0;overflow-x:auto;">
+      <!-- Bahn-Streifen -->
+      <div style="position:relative;margin:0 auto;width:100%;max-width:420px;">
+        <!-- Bahn-Körper -->
+        <div style="
+          border:3px solid #333;border-radius:4px;
+          background:white;height:48px;position:relative;margin:0 10px;
+          display:flex;align-items:stretch;
+        ">
+          <!-- vertikale Linien -->
+          <div style="position:absolute;left:0;top:-6px;bottom:-6px;width:3px;background:#E63946;border-radius:2px;"></div>
+          <div style="position:absolute;left:35.7%;top:-6px;bottom:-6px;width:2px;background:#333;border-style:dashed;"></div>
+          <div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:3px;background:#FF7F11;margin-left:-1px;"></div>
+          <div style="position:absolute;left:64.3%;top:-6px;bottom:-6px;width:2px;background:#333;"></div>
+          <div style="position:absolute;right:0;top:-6px;bottom:-6px;width:3px;background:#E63946;border-radius:2px;"></div>
+        </div>
+
+        <!-- Pfeile + Drop-Zonen unterhalb -->
+        <div style="display:flex;justify-content:space-between;margin:6px 10px 0;position:relative;">
+          ${A9_ZONES.map((z,i) => `
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;${i===0?'align-items:flex-start':i===4?'align-items:flex-end':''}">
+              <div style="font-size:1.1rem;">⬆️</div>
+              <div class="a9-drop-zone dd-drop-cell"
+                id="${z.id}"
+                data-zone="${z.id}"
+                style="min-width:58px;font-size:0.7rem;margin-top:4px;"
+                ondragover="a9DragOver(event,'${z.id}')"
+                ondragleave="a9DragLeave(event,'${z.id}')"
+                ondrop="a9Drop(event,'${z.id}')"
+                onclick="a9ClearZone('${z.id}')">
+                <span class="dd-cell-content" style="font-size:0.7rem;line-height:1.2;"></span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="dd-label">📦 Linien-Namen – zieh sie auf die Pfeile:</div>
+    <div class="dd-tokens" id="a9TokenBank">`;
+
+  tokens.forEach(t => {
+    html += `<div class="dd-token" id="a9tok_${t.idx}"
+      draggable="true" data-idx="${t.idx}" data-label="${t.label}"
+      style="font-size:0.82rem;padding:8px 10px;"
+      ondragstart="a9DragStart(event,${t.idx})"
+      ontouchstart="a9TouchStart(event,${t.idx})"
+      ontouchmove="a9TouchMove(event)"
+      ontouchend="a9TouchEnd(event)"
+      >${t.label}</div>`;
+  });
+
+  html += `</div>
+    <p style="font-size:0.75rem;color:#AAA;text-align:center;">💡 Auf ein Feld tippen entfernt den Namen wieder.</p>
+  </div>`;
+
+  document.getElementById(containerId).innerHTML = html;
+  document.getElementById(buttonsId).innerHTML =
+    `<button class="big-btn btn-primary" id="checkBtn" onclick="checkA9_${buttonsId.replace('Buttons','')}()">Antwort prüfen ✓</button>`;
+
+  window._a9Tokens = tokens;
+}
+
+let _a9DragIdx = null;
+function a9DragStart(e, idx) {
+  _a9DragIdx = idx;
+  e.dataTransfer.setData('text/plain', idx);
+  setTimeout(() => { const el = document.getElementById('a9tok_'+idx); if(el) el.style.opacity='0.4'; }, 0);
+}
+function a9DragOver(e, zid) { e.preventDefault(); (function(e,c){if(e)e.classList.add(c)})(document.getElementById(zid),'drag-over'); }
+function a9DragLeave(e, zid) { (function(e,c){if(e)e.classList.remove(c)})(document.getElementById(zid),'drag-over'); }
+function a9Drop(e, zid) {
+  e.preventDefault();
+  (function(e,c){if(e)e.classList.remove(c)})(document.getElementById(zid),'drag-over');
+  const idx = parseInt(e.dataTransfer.getData('text/plain'));
+  const tok = (window._a9Tokens ? window._a9Tokens.find(function(t){return t => t.idx === idx;}) : null);
+  if (!tok) return;
+  a9PlaceToken(zid, tok);
+}
+function a9ClearZone(zid) {
+  if (!a9State[zid]) return;
+  const prevIdx = a9State[zid].idx;
+  const prevEl = document.getElementById('a9tok_'+prevIdx);
+  if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity = ''; }
+  delete a9State[zid];
+  const cell = document.getElementById(zid);
+  if (cell) { cell.querySelector('.dd-cell-content').textContent = ''; cell.className = 'a9-drop-zone dd-drop-cell'; }
+}
+function a9PlaceToken(zid, tok) {
+  // If token already in a zone, clear that zone
+  Object.keys(a9State).forEach(k => { if ((a9State[k] && a9State[k].idx) === tok.idx) a9ClearZone(k); });
+  // Clear existing occupant
+  if (a9State[zid]) a9ClearZone(zid);
+  a9State[zid] = tok;
+  const cell = document.getElementById(zid);
+  if (cell) { cell.querySelector('.dd-cell-content').textContent = tok.label; cell.classList.add('filled-win'); }
+  const srcEl = document.getElementById('a9tok_'+tok.idx);
+  if (srcEl) srcEl.classList.add('used');
+}
+// Touch
+function a9TouchStart(e, idx) { a9TouchIdx = idx; showDDGhost(wi((window._a9Tokens ? window._a9Tokens.find(function(t){return t.idx===idx;}) : null) || {label:''}).label); }
+function a9TouchMove(e) {
+  e.preventDefault();
+  const touch = e.touches[0];
+  moveDDGhost(touch.clientX, touch.clientY);
+  document.querySelectorAll('.a9-drop-zone').forEach(c => c.classList.remove('drag-over'));
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  ((el && el.closest) ? el.closest('.a9-drop-zone') : null) && ((el && el.closest) ? el.closest('.a9-drop-zone') : null).classList.add('drag-over'); if ((el && el.classList && el.classList.contains('a9-drop-zone')) && el.classList.add('drag-over'));
+}
+function a9TouchEnd(e) {
+  hideDDGhost();
+  document.querySelectorAll('.a9-drop-zone').forEach(c => c.classList.remove('drag-over'));
+  const touch = e.changedTouches[0];
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const cell = (el && el.closest && el.closest('.a9-drop-zone')) || ((el && el.classList && el.classList.contains('a9-drop-zone')) ? el : null);
+  if (cell && a9TouchIdx !== null) {
+    const tok = (window._a9Tokens ? window._a9Tokens.find(function(t){return t => t.idx === a9TouchIdx;}) : null);
+    if (tok) a9PlaceToken(cell.dataset.zone, tok);
+  }
+  a9TouchIdx = null;
+}
+
+function checkA9Answer() {
+  let allCorrect = true, allFilled = true;
+  A9_ZONES.forEach(z => {
+    const cell = document.getElementById(z.id);
+    if (!cell) return;
+    const placed = a9State[z.id];
+    cell.classList.remove('filled-win');
+    if (!placed) { allFilled = false; cell.classList.add('wrong-final'); return; }
+    if (placed.label === z.correct) { cell.classList.add('correct-final'); }
+    else { cell.classList.add('wrong-final'); allCorrect = false; }
+  });
+  return { isCorrect: allFilled && allCorrect, isPartial: !allFilled || !allCorrect };
+}
+
+// =============================================
+// DRAG & DROP A10 – Maße der Fechtbahn
+// =============================================
+// Drop zones: Breite(links), 5m(links), 2m(linke Mitte), 2m(rechte Mitte), 5m(rechts), Gesamt
+const A10_ZONES = [
+  { id:'a10_breite', correct:'1,5 m', label:'Breite' },
+  { id:'a10_left',   correct:'5 m',   label:'End→Start links' },
+  { id:'a10_ml',     correct:'2 m',   label:'Start→Mitte links' },
+  { id:'a10_mr',     correct:'2 m',   label:'Mitte→Start rechts' },
+  { id:'a10_right',  correct:'5 m',   label:'End→Start rechts' },
+  { id:'a10_gesamt', correct:'14 m',  label:'Gesamtlänge' },
+];
+const A10_TOKENS = ['1,5 m','5 m','2 m','2 m','5 m','14 m','10 m','3 m'];
+
+let a10State = {};
+let a10TouchIdx = null;
+
+function renderDragDropA10(containerId, buttonsId) {
+  a10State = {};
+  window._currentQ = QUESTIONS.find(q => q.id === 'A10');
+  window._answered = false;
+
+  const tokens = shuffleArray(A10_TOKENS.map((t, i) => ({ label: t, idx: i })));
+
+  let html = `<div class="question-card">
+    <span class="question-part-badge" style="background:#118AB220;color:#118AB2;">Teil A: Allgemeines</span>
+    <div class="question-text">Trage die Maße der Fechtbahn zwischen den Pfeilen auf dem Antwortbogen ein (z.B. 3 m)!</div>
+    <div class="answer-count-badge">🖱️ Ziehe die richtigen Maße in die Felder mit den Pfeilen!</div>
+
+    <div class="dd-info">📏 Ziehe die richtigen Meter-Zahlen an die richtige Stelle der Fechtbahn!</div>
+
+    <!-- FECHTBAHN MIT MASS-ZONEN -->
+    <div style="background:#f0f4ff;border-radius:16px;padding:16px 10px 10px;margin:12px 0;overflow-x:auto;">
+      <div style="position:relative;margin:0 auto;max-width:440px;">
+
+        <!-- Breiten-Pfeil links -->
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:0.65rem;color:#118AB2;font-weight:800;">Breite ↕</div>
+          <div class="a10-drop-zone dd-drop-cell" id="a10_breite" data-zone="a10_breite"
+            style="min-width:52px;font-size:0.72rem;"
+            ondragover="a10DragOver(event,'a10_breite')" ondragleave="a10DragLeave(event,'a10_breite')"
+            ondrop="a10Drop(event,'a10_breite')" onclick="a10ClearZone('a10_breite')">
+            <span class="dd-cell-content" style="font-size:0.72rem;"></span>
+          </div>
+        </div>
+
+        <!-- Bahn-Streifen -->
+        <div style="border:3px solid #333;border-radius:4px;background:white;height:40px;position:relative;margin:0;">
+          <div style="position:absolute;left:0;top:-5px;bottom:-5px;width:3px;background:#E63946;"></div>
+          <div style="position:absolute;left:35.7%;top:-5px;bottom:-5px;width:2px;background:#555;border-left:2px dashed #555;"></div>
+          <div style="position:absolute;left:50%;top:-5px;bottom:-5px;width:3px;background:#FF7F11;margin-left:-1px;"></div>
+          <div style="position:absolute;left:64.3%;top:-5px;bottom:-5px;width:2px;background:#555;"></div>
+          <div style="position:absolute;right:0;top:-5px;bottom:-5px;width:3px;background:#E63946;"></div>
+        </div>
+
+        <!-- Maß-Zonen UNTER der Bahn -->
+        <div style="margin-top:10px;">
+          <!-- Obere Reihe: 4 Segment-Maße -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-bottom:6px;">
+            ${['a10_left','a10_ml','a10_mr','a10_right'].map((zid,i) => {
+              const labels = ['← 5m Bereich →','← 2m →','← 2m →','← 5m Bereich →'];
+              return `<div style="text-align:center;">
+                <div style="font-size:0.55rem;color:#888;margin-bottom:2px;">${labels[i]}</div>
+                <div class="a10-drop-zone dd-drop-cell" id="${zid}" data-zone="${zid}"
+                  style="min-width:44px;font-size:0.72rem;margin:0 auto;"
+                  ondragover="a10DragOver(event,'${zid}')" ondragleave="a10DragLeave(event,'${zid}')"
+                  ondrop="a10Drop(event,'${zid}')" onclick="a10ClearZone('${zid}')">
+                  <span class="dd-cell-content" style="font-size:0.72rem;"></span>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+          <!-- Untere Reihe: Gesamtlänge -->
+          <div style="text-align:center;">
+            <div style="font-size:0.6rem;color:#888;margin-bottom:2px;">⟵ Gesamtlänge der Bahn ⟶</div>
+            <div class="a10-drop-zone dd-drop-cell" id="a10_gesamt" data-zone="a10_gesamt"
+              style="min-width:90px;font-size:0.72rem;margin:0 auto;"
+              ondragover="a10DragOver(event,'a10_gesamt')" ondragleave="a10DragLeave(event,'a10_gesamt')"
+              ondrop="a10Drop(event,'a10_gesamt')" onclick="a10ClearZone('a10_gesamt')">
+              <span class="dd-cell-content" style="font-size:0.72rem;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dd-label">📦 Maße – zieh sie in die richtigen Felder:</div>
+    <div class="dd-tokens" id="a10TokenBank">`;
+
+  tokens.forEach(t => {
+    html += `<div class="dd-token" id="a10tok_${t.idx}"
+      draggable="true" data-idx="${t.idx}" data-label="${t.label}"
+      style="font-size:0.85rem;padding:9px 12px;"
+      ondragstart="a10DragStart(event,${t.idx})"
+      ontouchstart="a10TouchStart(event,${t.idx})"
+      ontouchmove="a10TouchMove(event)"
+      ontouchend="a10TouchEnd(event)"
+      >${t.label}</div>`;
+  });
+
+  html += `</div>
+    <p style="font-size:0.75rem;color:#AAA;text-align:center;">💡 Auf ein Feld tippen entfernt das Maß wieder.</p>
+  </div>`;
+
+  document.getElementById(containerId).innerHTML = html;
+  document.getElementById(buttonsId).innerHTML =
+    `<button class="big-btn btn-primary" id="checkBtn" onclick="checkA10_${buttonsId.replace('Buttons','')}()">Antwort prüfen ✓</button>`;
+
+  window._a10Tokens = tokens;
+}
+
+let _a10DragIdx = null;
+function a10DragStart(e, idx) {
+  _a10DragIdx = idx;
+  e.dataTransfer.setData('text/plain', idx);
+  setTimeout(() => { const el = document.getElementById('a10tok_'+idx); if(el) el.style.opacity='0.4'; }, 0);
+}
+function a10DragOver(e, zid) { e.preventDefault(); (function(e,c){if(e)e.classList.add(c)})(document.getElementById(zid),'drag-over'); }
+function a10DragLeave(e, zid) { (function(e,c){if(e)e.classList.remove(c)})(document.getElementById(zid),'drag-over'); }
+function a10Drop(e, zid) {
+  e.preventDefault();
+  (function(e,c){if(e)e.classList.remove(c)})(document.getElementById(zid),'drag-over');
+  const idx = parseInt(e.dataTransfer.getData('text/plain'));
+  const tok = (window._a10Tokens ? window._a10Tokens.find(function(t){return t => t.idx === idx;}) : null);
+  if (tok) a10PlaceToken(zid, tok);
+}
+function a10ClearZone(zid) {
+  if (!a10State[zid]) return;
+  const prevEl = document.getElementById('a10tok_'+a10State[zid].idx);
+  if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity = ''; }
+  delete a10State[zid];
+  const cell = document.getElementById(zid);
+  if (cell) { cell.querySelector('.dd-cell-content').textContent = ''; cell.className = 'a10-drop-zone dd-drop-cell'; }
+}
+function a10PlaceToken(zid, tok) {
+  Object.keys(a10State).forEach(k => { if ((a10State[k] && a10State[k].idx) === tok.idx) a10ClearZone(k); });
+  if (a10State[zid]) a10ClearZone(zid);
+  a10State[zid] = tok;
+  const cell = document.getElementById(zid);
+  if (cell) { cell.querySelector('.dd-cell-content').textContent = tok.label; cell.classList.add('filled-win'); }
+  const srcEl = document.getElementById('a10tok_'+tok.idx);
+  if (srcEl) srcEl.classList.add('used');
+}
+function a10TouchStart(e, idx) { a10TouchIdx = idx; showDDGhost(wind((window._a10Tokens ? window._a10Tokens.find(function(t){return t.idx===idx;}) : null) || {label:''}).label); }
+function a10TouchMove(e) {
+  e.preventDefault();
+  const touch = e.touches[0];
+  moveDDGhost(touch.clientX, touch.clientY);
+  document.querySelectorAll('.a10-drop-zone').forEach(c => c.classList.remove('drag-over'));
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  ((el && el.closest) ? el.closest('.a10-drop-zone') : null) && ((el && el.closest) ? el.closest('.a10-drop-zone') : null).classList.add('drag-over'); if ((el && el.classList && el.classList.contains('a10-drop-zone')) && el.classList.add('drag-over'));
+}
+function a10TouchEnd(e) {
+  hideDDGhost();
+  document.querySelectorAll('.a10-drop-zone').forEach(c => c.classList.remove('drag-over'));
+  const touch = e.changedTouches[0];
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const cell = (el && el.closest && el.closest('.a10-drop-zone')) || ((el && el.classList && el.classList.contains('a10-drop-zone')) ? el : null);
+  if (cell && a10TouchIdx !== null) {
+    const tok = (window._a10Tokens ? window._a10Tokens.find(function(t){return t => t.idx === a10TouchIdx;}) : null);
+    if (tok) a10PlaceToken(cell.dataset.zone, tok);
+  }
+  a10TouchIdx = null;
+}
+function checkA10Answer() {
+  let allCorrect = true, allFilled = true;
+  A10_ZONES.forEach(z => {
+    const cell = document.getElementById(z.id);
+    if (!cell) return;
+    const placed = a10State[z.id];
+    cell.classList.remove('filled-win');
+    if (!placed) { allFilled = false; cell.classList.add('wrong-final'); return; }
+    if (placed.label === z.correct) { cell.classList.add('correct-final'); }
+    else { cell.classList.add('wrong-final'); allCorrect = false; }
+  });
+  return { isCorrect: allFilled && allCorrect, isPartial: !allFilled || !allCorrect };
+}
+
+// =============================================
+// SHARED GHOST HELPERS
+// =============================================
+function showDDGhost(label) {
+  if (!ddGhost) { ddGhost = document.createElement('div'); ddGhost.className = 'dd-dragging-ghost'; document.body.appendChild(ddGhost); }
+  ddGhost.textContent = label;
+  ddGhost.style.display = 'block';
+}
+function moveDDGhost(x, y) { if (ddGhost) { ddGhost.style.left = x+'px'; ddGhost.style.top = y+'px'; } }
+function hideDDGhost() { if (ddGhost) ddGhost.style.display = 'none'; }
+
+// =============================================
+// RESET PROGRESS
+// =============================================
+function doResetProgress() {
+  document.getElementById('confirmOverlay').style.display = 'none';
+  localStorage.removeItem('fechtSpielProgress');
+  progress = loadProgress();
+  progress.totalAnswered = 0;
+  progress.totalCorrect = 0;
+  progress.streak = 0;
+  progress.bestStreak = 0;
+  progress.partCorrect = {};
+  progress.partAnswered = {};
+  progress.earnedBadges = [];
+  progress.questionStats = {};
+  saveProgress(progress);
+  showFortschritt();
+}
+
+// =============================================
+// SCHWACHE FRAGEN MODUS
+// =============================================
+let schwachIdx = 0, schwachQuestions = [], schwachCorrect = 0, schwachOptShuffled = [];
+
+function showSchwacheFragenMode() {
+  // Collect weak questions: answered at least once and <70% correct
+  const weak = QUESTIONS.filter(q => {
+    const s = progress.questionStats[q.id];
+    return s && s.answered > 0 && (s.correct / s.answered) < 0.7;
+  });
+
+  if (weak.length === 0) {
+    // No weak questions — show friendly message
+    showScreen('schwachScreen');
+    document.getElementById('schwachQNum').textContent = '';
+    document.getElementById('schwachScore').textContent = '';
+    document.getElementById('schwachProgressFill').style.width = '100%';
+    document.getElementById('schwachContent').innerHTML = `
+      <div style="text-align:center;padding:40px 20px;">
+        <div style="font-size:5rem;margin-bottom:16px;">🏆</div>
+        <h2 style="font-family:'Baloo 2','Trebuchet MS',Arial,sans-serif;font-size:1.5rem;color:var(--green);margin-bottom:12px;">Wow, alles super!</h2>
+        <p style="font-size:1rem;color:#666;line-height:1.6;">Du hast keine schwachen Fragen! Ferdi ist sehr stolz auf dich! 🦊<br><br>Mach einfach weiter und lerne noch mehr!</p>
+      </div>`;
+    document.getElementById('schwachButtons').innerHTML =
+      `<button class="big-btn btn-green" onclick="goHome()">🏠 Zur Startseite</button>`;
+    return;
+  }
+
+  schwachIdx = 0;
+  schwachCorrect = 0;
+  schwachQuestions = shuffleArray(weak);
+  showScreen('schwachScreen');
+  showSchwachQuestion();
+}
+
+function showSchwachQuestion() {
+  const q = schwachQuestions[schwachIdx];
+  schwachOptShuffled = shuffleArray(q.options || []);
+  const total = schwachQuestions.length;
+
+  document.getElementById('schwachQNum').textContent = `Frage ${schwachIdx + 1} von ${total}`;
+  document.getElementById('schwachScore').textContent = `⭐ ${schwachCorrect} richtig`;
+  document.getElementById('schwachProgressFill').style.width = (schwachIdx / total * 100) + '%';
+
+  // Show "weak" hint banner above the question
+  const weakStat = progress.questionStats[q.id];
+  const pct = weakStat ? Math.round((weakStat.correct / weakStat.answered) * 100) : 0;
+  const hintHtml = `<div style="background:#FFF0E0;border:2px solid var(--orange);border-radius:14px;padding:12px 16px;margin-bottom:12px;font-size:0.85rem;font-weight:700;color:#a05000;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:1.4rem;">💪</span>
+    <span>Diese Frage hast du bisher zu <strong>${pct}%</strong> richtig! Üb sie nochmal!</span>
+  </div>`;
+
+  if (q.type === 'dragdrop')          { renderDragDropQuestion('schwachContent', 'schwachButtons', 'schwach'); }
+  else if (q.type === 'dragdrop_a9')  { renderDragDropA9('schwachContent', 'schwachButtons'); }
+  else if (q.type === 'dragdrop_a10') { renderDragDropA10('schwachContent', 'schwachButtons'); }
+  else { renderQuestion(q, schwachOptShuffled, 'schwachContent', 'schwachButtons', 'schwach', null); }
+
+  // Prepend the hint banner
+  document.getElementById('schwachContent').innerHTML = hintHtml + document.getElementById('schwachContent').innerHTML;
+  (function(e,a,v){if(e)e.setAttribute(a,v)})(document.getElementById('checkBtn'),'onclick', 'checkAnswerSchwach()');
+}
+
+function checkAnswerSchwach() {
+  const q = window._currentQ || schwachQuestions[schwachIdx];
+  let isCorrect, isPartial;
+
+  if (q.type === 'dragdrop')          { ({ isCorrect, isPartial } = checkDragDropAnswer()); window._answered = true; }
+  else if (q.type === 'dragdrop_a9')  { ({ isCorrect, isPartial } = checkA9Answer());       window._answered = true; }
+  else if (q.type === 'dragdrop_a10') { ({ isCorrect, isPartial } = checkA10Answer());      window._answered = true; }
+  else { ({ isCorrect, isPartial } = evaluateAnswer()); }
+
+  updateProgressStats(q, isCorrect);
+
+  let msg = '';
+  if (isCorrect) {
+    msg = `<div class="feedback-box success"><span class="feedback-icon">🎉</span><div><strong>${PRAISE[Math.floor(Math.random() * PRAISE.length)]}</strong><br>${q.explanation}</div></div>`;
+    schwachCorrect++;
+  } else if (isPartial) {
+    msg = `<div class="feedback-box partial"><span class="feedback-icon">🌟</span><div><strong>Fast! Schau dir die Lösung an!</strong><br>${q.explanation}</div></div>`;
+  } else {
+    msg = `<div class="feedback-box error"><span class="feedback-icon">💡</span><div><strong>${PRAISE_WRONG[Math.floor(Math.random() * PRAISE_WRONG.length)]}</strong><br>${q.explanation}</div></div>`;
+  }
+
+  document.getElementById('schwachContent').innerHTML += msg;
+  document.getElementById('schwachContent').scrollTop = 999999;
+
+  const isLast = schwachIdx >= schwachQuestions.length - 1;
+  document.getElementById('schwachButtons').innerHTML = `
+    ${isLast
+      ? `<button class="big-btn btn-green" onclick="showSchwachEnd()">🏁 Fertig!</button>`
+      : `<button class="big-btn btn-primary" onclick="schwachNext()">Weiter →</button>`}
+    <button class="big-btn btn-secondary" onclick="showSchwachQuestion()">🔄 Nochmal üben</button>
+  `;
+}
+
+function schwachNext() { schwachIdx++; showSchwachQuestion(); }
+
+function showSchwachEnd() {
+  const total = schwachQuestions.length;
+  const pct = Math.round(schwachCorrect / total * 100);
+  let stars = pct === 100 ? '⭐⭐⭐' : pct >= 60 ? '⭐⭐' : '⭐';
+  let msg = pct === 100
+    ? '🏆 Perfekt! Du hast alle schwachen Fragen richtig! Ferdi ist mega stolz!'
+    : pct >= 60
+    ? '💪 Gut gemacht! Du wirst immer besser – weiter üben!'
+    : '🦊 Ferdi sagt: Nicht aufgeben – beim nächsten Mal klappt es besser!';
+
+  showScreen('endScreen');
+  document.getElementById('endContent').innerHTML = `
+    <div style="font-size:5rem;margin-bottom:16px;">🦊</div>
+    <div class="end-stars">${stars}</div>
+    <div class="end-score">${schwachCorrect}/${total}</div>
+    <div class="end-label">${pct}% richtig!</div>
+    <div class="end-message">${msg}</div>
+    <button class="big-btn btn-primary" onclick="showSchwacheFragenMode()">🔄 Nochmal üben</button>
+    <button class="big-btn btn-secondary" onclick="goHome()">🏠 Zur Startseite</button>
+  `;
+  if (pct === 100) triggerConfetti();
+  checkBadges();
+}
+
+// Aliases so renderQuestion's checkAnswer_${mode}() calls work for all modes
+function checkAnswer_learn()  { checkAnswerLearn(); }
+function checkAnswer_quiz()   { checkAnswerQuiz(); }
+
+// Aliases for all drag-drop button onclick variants
+function checkDragDrop_learn()  { checkAnswerLearn(); }
+function checkDragDrop_quiz()   { checkAnswerQuiz(); }
+function checkDragDrop_schwach(){ checkAnswerSchwach(); }
+function checkA9_learn()        { checkAnswerLearn(); }
+function checkA9_quiz()         { checkAnswerQuiz(); }
+function checkA9_schwach()      { checkAnswerSchwach(); }
+function checkA10_learn()       { checkAnswerLearn(); }
+function checkA10_quiz()        { checkAnswerQuiz(); }
+function checkA10_schwach()     { checkAnswerSchwach(); }
+function checkAnswer_schwach()  { checkAnswerSchwach(); }
+
+// Quit dialog for quiz back button
+function showQuitDialog() {
+  document.getElementById('quitOverlay').style.display = 'flex';
+}
+
+// =============================================
+// INIT
+// =============================================
+updateHomeProgress();
+checkBadges();
+</script>
+</body>
+</html>
