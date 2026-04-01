@@ -1781,397 +1781,236 @@ function triggerConfetti() {
 // Moritz mit Peter 3:5 → Moritz D3, Peter V5
 // Kurt mit Max 5:3 → Kurt V5, Max D3
 
-const DD_PLAYERS = ['Max','Moritz','Kurt','Peter'];
-// [row-name][col-nr]: correct token label
-// nr: 1=Max,2=Moritz,3=Kurt,4=Peter
-// cell [row][col] where row!=col
-const DD_SOLUTION = {
-  // Max (nr1): vs Moritz=V5, vs Kurt=D3, vs Peter=V5
+// =============================================
+// TAP-TO-PLACE SYSTEM (iOS-kompatibel)
+// Erst Token antippen = auswählen (blau)
+// Dann Zielfeld antippen = einsetzen
+// =============================================
+
+let ddSelectedToken = null; // { label, idx, cls, owner } owner = 'dd'|'a9'|'a10'
+let ddState   = {};
+let a9State   = {};
+let a10State  = {};
+
+// --- Shared helpers ---
+function tapSelectToken(idx, owner) {
+  // Deselect previous
+  if (ddSelectedToken) {
+    var prevEl = document.getElementById(ddSelectedToken.owner + 'tok_' + ddSelectedToken.idx);
+    if (prevEl) { prevEl.style.outline = ''; prevEl.style.transform = ''; }
+    // If same token tapped again → deselect
+    if (ddSelectedToken.idx === idx && ddSelectedToken.owner === owner) {
+      ddSelectedToken = null;
+      return;
+    }
+  }
+  var tokenList = owner === 'dd' ? window._ddTokens : owner === 'a9' ? window._a9Tokens : window._a10Tokens;
+  var tok = null;
+  for (var i = 0; i < tokenList.length; i++) { if (tokenList[i].idx === idx) { tok = tokenList[i]; break; } }
+  if (!tok) return;
+  ddSelectedToken = { label: tok.label, idx: idx, cls: tok.cls || '', owner: owner };
+  var el = document.getElementById(owner + 'tok_' + idx);
+  if (el) { el.style.outline = '3px solid #FF7F11'; el.style.transform = 'scale(1.1)'; }
+}
+
+function tapPlaceInZone(zoneKey, owner) {
+  if (!ddSelectedToken || ddSelectedToken.owner !== owner) {
+    // If zone already filled, tap to remove
+    var stateObj = owner === 'dd' ? ddState : owner === 'a9' ? a9State : a10State;
+    if (stateObj[zoneKey]) { clearZone(zoneKey, owner); }
+    return;
+  }
+  var tok = ddSelectedToken;
+  // Clear selection highlight
+  var prevEl = document.getElementById(owner + 'tok_' + tok.idx);
+  if (prevEl) { prevEl.style.outline = ''; prevEl.style.transform = ''; }
+  ddSelectedToken = null;
+  placeToken(zoneKey, tok, owner);
+}
+
+function clearZone(zoneKey, owner) {
+  var stateObj = owner === 'dd' ? ddState : owner === 'a9' ? a9State : a10State;
+  var placed = stateObj[zoneKey];
+  if (!placed) return;
+  var prevEl = document.getElementById(owner + 'tok_' + placed.idx);
+  if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity = ''; }
+  delete stateObj[zoneKey];
+  var cell = document.getElementById((owner === 'dd' ? 'ddc_' : owner === 'a9' ? '' : '') + zoneKey);
+  if (!cell) cell = document.getElementById(zoneKey);
+  if (cell) {
+    var span = cell.querySelector('.dd-cell-content');
+    if (span) span.textContent = '';
+    cell.className = cell.className.replace(/filled-win|filled-lose|correct-final|wrong-final/g, '').trim();
+  }
+}
+
+function placeToken(zoneKey, tok, owner) {
+  var stateObj = owner === 'dd' ? ddState : owner === 'a9' ? a9State : a10State;
+  // Remove token from any zone it's already in
+  Object.keys(stateObj).forEach(function(k) {
+    if (stateObj[k] && stateObj[k].idx === tok.idx) { clearZone(k, owner); }
+  });
+  // Clear existing occupant of target zone
+  if (stateObj[zoneKey]) { clearZone(zoneKey, owner); }
+  // Place
+  stateObj[zoneKey] = tok;
+  var cellId = owner === 'dd' ? 'ddc_' + zoneKey : zoneKey;
+  var cell = document.getElementById(cellId);
+  if (cell) {
+    var span = cell.querySelector('.dd-cell-content');
+    if (span) span.textContent = tok.label;
+    if (tok.cls === 'win') { cell.classList.add('filled-win'); }
+    else if (tok.cls === 'lose') { cell.classList.add('filled-lose'); }
+    else { cell.classList.add('filled-win'); }
+  }
+  var srcEl = document.getElementById(owner + 'tok_' + tok.idx);
+  if (srcEl) { srcEl.classList.add('used'); srcEl.style.opacity = ''; }
+}
+
+// =============================================
+// E10 TABLEAU DRAG-DROP
+// =============================================
+var DD_PLAYERS = ['Max','Moritz','Kurt','Peter'];
+var DD_SOLUTION = {
   'Max-2':'V5','Max-3':'D3','Max-4':'V5',
-  // Moritz (nr2): vs Max=D2, vs Kurt=D0, vs Peter=D3
   'Moritz-1':'D2','Moritz-3':'D0','Moritz-4':'D3',
-  // Kurt (nr3): vs Max=V5, vs Moritz=V5, vs Peter=V2
   'Kurt-1':'V5','Kurt-2':'V5','Kurt-4':'V2',
-  // Peter (nr4): vs Max=D1, vs Moritz=V5, vs Kurt=D2
   'Peter-1':'D1','Peter-2':'V5','Peter-3':'D2',
 };
-// All tokens that need placing (unique labels with color class)
-const DD_TOKENS = [
-  // wins
+var DD_TOKENS_LIST = [
   {label:'V5',cls:'win'},{label:'V5',cls:'win'},{label:'V5',cls:'win'},{label:'V5',cls:'win'},
-  // losses / misc
   {label:'D2',cls:'lose'},{label:'D3',cls:'lose'},{label:'D3',cls:'lose'},
   {label:'D0',cls:'lose'},{label:'D1',cls:'lose'},{label:'D2',cls:'lose'},
   {label:'V2',cls:'win'},{label:'V2',cls:'win'},
 ];
 
-let ddState = {}; // key = 'Player-colNr', value = token label placed
-let ddDragging = null; // currently dragged token index
-let ddGhost = null;
-
 function renderDragDropQuestion(containerId, buttonsId, mode) {
   ddState = {};
-  window._currentQ = QUESTIONS.find(q => q.id === 'E10');
+  ddSelectedToken = null;
+  window._currentQ = QUESTIONS.find(function(q) { return q.id === 'E10'; });
   window._answered = false;
-  const container = document.getElementById(containerId);
-  const btns = document.getElementById(buttonsId);
+  var tokens = shuffleArray(DD_TOKENS_LIST.map(function(t, i) { return {label:t.label, cls:t.cls, idx:i}; }));
+  window._ddTokens = tokens;
 
-  // Build tokens (shuffle)
-  const tokens = shuffleArray(DD_TOKENS.map((t,i) => ({...t, idx:i})));
-
-  let html = `
-    <div class="question-card">
-      <span class="question-part-badge" style="background:#06D6A020;color:#06D6A0;">Teil E: Turnierablauf</span>
-      <div class="question-text">Trage folgende Gefechte in das Tableau ein!</div>
-      <div class="answer-count-badge">🖱️ Ziehe die richtigen Ergebnisse in die freien Felder!</div>
-
-      <div class="dd-info">
-        📋 <strong>Die Gefechte:</strong><br>
-        Max – Moritz: <strong>5:2</strong> &nbsp;|&nbsp; Kurt – Peter: <strong>2:2</strong> (Losentscheid für Peter → D2/V2)<br>
-        Peter – Max: <strong>1:5</strong> &nbsp;|&nbsp; Kurt – Moritz: <strong>5:0</strong><br>
-        Moritz – Peter: <strong>3:5</strong> &nbsp;|&nbsp; Kurt – Max: <strong>5:3</strong>
-      </div>
-
-      <div class="dd-legend">
-        <div class="dd-legend-item"><div class="dd-legend-dot" style="background:var(--green)"></div>V = Victoire (Gewonnen)</div>
-        <div class="dd-legend-item"><div class="dd-legend-dot" style="background:var(--red)"></div>D = Défaite (Verloren)</div>
-      </div>
-
-      <div class="dd-label">📦 Verfügbare Ergebnisse – zieh sie ins Tableau:</div>
-      <div class="dd-tokens" id="ddTokenBank">`;
-
-  tokens.forEach((t) => {
-    html += `<div class="dd-token ${t.cls}" id="ddtok_${t.idx}" draggable="true"
-      data-idx="${t.idx}" data-label="${t.label}"
-      ondragstart="ddDragStart(event,${t.idx})"
-      ontouchstart="ddTouchStart(event,${t.idx})"
-      ontouchmove="ddTouchMove(event)"
-      ontouchend="ddTouchEnd(event)"
-      >${t.label}</div>`;
+  var html = '<div class="question-card">'
+    + '<span class="question-part-badge" style="background:#06D6A020;color:#06D6A0;">Teil E: Turnierablauf</span>'
+    + '<div class="question-text">Trage folgende Gefechte in das Tableau ein!</div>'
+    + '<div class="answer-count-badge">👆 Tippe ein Ergebnis an – dann tippe auf das Feld!</div>'
+    + '<div class="dd-info">📋 <strong>Die Gefechte:</strong><br>'
+    + 'Max–Moritz: <strong>5:2</strong> &nbsp;|&nbsp; Kurt–Peter: <strong>2:2</strong> (Losentscheid → D2/V2)<br>'
+    + 'Peter–Max: <strong>1:5</strong> &nbsp;|&nbsp; Kurt–Moritz: <strong>5:0</strong><br>'
+    + 'Moritz–Peter: <strong>3:5</strong> &nbsp;|&nbsp; Kurt–Max: <strong>5:3</strong></div>'
+    + '<div class="dd-legend"><div class="dd-legend-item"><div class="dd-legend-dot" style="background:var(--green)"></div>V = Gewonnen</div>'
+    + '<div class="dd-legend-item"><div class="dd-legend-dot" style="background:var(--red)"></div>D = Verloren</div></div>'
+    + '<div class="dd-label">1️⃣ Tippe ein Ergebnis an:</div>'
+    + '<div class="dd-tokens" id="ddTokenBank">';
+  tokens.forEach(function(t) {
+    html += '<div class="dd-token ' + t.cls + '" id="ddtok_' + t.idx + '" onclick="tapSelectToken(' + t.idx + ',\'dd\')">' + t.label + '</div>';
   });
-
-  html += `</div>
-      <table class="dd-tableau">
-        <thead><tr>
-          <th>Name</th><th>Nr</th><th>1 Max</th><th>2 Moritz</th><th>3 Kurt</th><th>4 Peter</th>
-        </tr></thead>
-        <tbody>`;
-
-  DD_PLAYERS.forEach((player, pi) => {
-    const nr = pi + 1;
-    html += `<tr><td class="name-cell">${player}</td><td style="background:#F8FFF8;font-weight:800;">${nr}</td>`;
-    DD_PLAYERS.forEach((opp, oi) => {
-      const colNr = oi + 1;
+  html += '</div><div class="dd-label">2️⃣ Tippe dann auf ein leeres Feld:</div>'
+    + '<table class="dd-tableau"><thead><tr>'
+    + '<th>Name</th><th>Nr</th><th>1 Max</th><th>2 Moritz</th><th>3 Kurt</th><th>4 Peter</th>'
+    + '</tr></thead><tbody>';
+  DD_PLAYERS.forEach(function(player, pi) {
+    var nr = pi + 1;
+    html += '<tr><td class="name-cell">' + player + '</td><td style="background:#F8FFF8;font-weight:800;">' + nr + '</td>';
+    DD_PLAYERS.forEach(function(opp, oi) {
+      var colNr = oi + 1;
       if (player === opp) {
-        html += `<td class="self-cell">—</td>`;
+        html += '<td class="self-cell">—</td>';
       } else {
-        const key = `${player}-${colNr}`;
-        html += `<td class="dd-drop-cell" id="ddc_${key}"
-          ondragover="ddDragOver(event,'${key}')"
-          ondragleave="ddDragLeave(event,'${key}')"
-          ondrop="ddDrop(event,'${key}')"
-          onclick="ddClickClear('${key}')"
-          data-key="${key}"><span class="dd-cell-content"></span></td>`;
+        var key = player + '-' + colNr;
+        html += '<td class="dd-drop-cell" id="ddc_' + key + '" onclick="tapPlaceInZone(\'' + key + '\',\'dd\')">'
+          + '<span class="dd-cell-content"></span></td>';
       }
     });
-    html += `</tr>`;
+    html += '</tr>';
   });
+  html += '</tbody></table>'
+    + '<p style="font-size:0.78rem;color:#AAA;text-align:center;">💡 Belegtes Feld antippen entfernt das Ergebnis wieder.</p>'
+    + '</div>';
 
-  html += `</tbody></table>
-      <p style="font-size:0.78rem;color:#AAA;text-align:center;margin-bottom:4px;">💡 Auf ein Feld tippen / klicken entfernt das Ergebnis wieder.</p>
-    </div>`;
-
-  container.innerHTML = html;
-  btns.innerHTML = `<button class="big-btn btn-primary" id="checkBtn" onclick="checkDragDrop_${mode}()">Antwort prüfen ✓</button>`;
-
-  // store tokens list for reference
-  window._ddTokens = tokens;
-}
-
-function ddDragStart(e, idx) {
-  ddDragging = idx;
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', idx);
-  setTimeout(() => { const el = document.getElementById('ddtok_'+idx); if(el) el.style.opacity='0.4'; }, 0);
-}
-
-function ddDragOver(e, key) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  (function(e,c){if(e)e.classList.add(c)})(document.getElementById('ddc_'+key),'drag-over');
-}
-
-function ddDragLeave(e, key) {
-  (function(e,c){if(e)e.classList.remove(c)})(document.getElementById('ddc_'+key),'drag-over');
-}
-
-function ddDrop(e, key) {
-  e.preventDefault();
-  (function(e,c){if(e)e.classList.remove(c)})(document.getElementById('ddc_'+key),'drag-over');
-  const idx = parseInt(e.dataTransfer.getData('text/plain'));
-  const tok = window._ddTokens.find(t => t.idx === idx);
-  if (!tok) return;
-  // Return previous occupant if any
-  if (ddState[key]) {
-    const prevLabel = ddState[key].label;
-    const prevIdx = ddState[key].idx;
-    const prevEl = document.getElementById('ddtok_'+prevIdx);
-    if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity=''; }
-  }
-  // If token was in another cell, clear that cell
-  Object.keys(ddState).forEach(k => {
-    if (ddState[k] && ddState[k].idx === idx) { ddSetCell(k, null); }
-  });
-  ddSetCell(key, tok);
-  const srcEl = document.getElementById('ddtok_'+idx);
-  if (srcEl) { srcEl.classList.add('used'); srcEl.style.opacity=''; }
-}
-
-function ddClickClear(key) {
-  if (!ddState[key]) return;
-  const prevIdx = ddState[key].idx;
-  const prevEl = document.getElementById('ddtok_'+prevIdx);
-  if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity=''; }
-  ddSetCell(key, null);
-}
-
-function ddSetCell(key, tok) {
-  const cell = document.getElementById('ddc_'+key);
-  if (!cell) return;
-  if (!tok) {
-    delete ddState[key];
-    cell.querySelector('.dd-cell-content').textContent = '';
-    cell.className = 'dd-drop-cell';
-    cell.setAttribute('ondragover', `ddDragOver(event,'${key}')`);
-    cell.setAttribute('ondragleave', `ddDragLeave(event,'${key}')`);
-    cell.setAttribute('ondrop', `ddDrop(event,'${key}')`);
-    cell.setAttribute('onclick', `ddClickClear('${key}')`);
-  } else {
-    ddState[key] = tok;
-    const content = cell.querySelector('.dd-cell-content');
-    content.textContent = tok.label;
-    cell.classList.remove('drag-over');
-    cell.classList.add(tok.cls === 'win' ? 'filled-win' : 'filled-lose');
-  }
-}
-
-// ---- Touch drag support ----
-let _touchTokIdx = null;
-function ddTouchStart(e, idx) {
-  _touchTokIdx = idx;
-  showDDGhost(window((window._ddTokens ? window._ddTokens.find(function(t){return t.idx===idx;}) : null) || {label:''}).label);
-}
-function ddTouchMove(e) {
-  e.preventDefault();
-  const touch = e.touches[0];
-  moveDDGhost(touch.clientX, touch.clientY);
-  document.querySelectorAll('.dd-drop-cell').forEach(c => c.classList.remove('drag-over'));
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  if ((el && el.classList && el.classList.contains('dd-drop-cell'))) el.classList.add('drag-over');
-  else if ((el && el.closest && el.closest('.dd-drop-cell'))) el.closest('.dd-drop-cell').classList.add('drag-over');
-}
-function ddTouchEnd(e) {
-  hideDDGhost();
-  document.querySelectorAll('.dd-drop-cell').forEach(c => c.classList.remove('drag-over'));
-  const touch = e.changedTouches[0];
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  const cell = (el && el.closest && el.closest('.dd-drop-cell')) || ((el && el.classList && el.classList.contains('dd-drop-cell')) ? el : null);
-  if (cell && _touchTokIdx !== null) {
-    const key = cell.dataset.key;
-    const tok = (window._ddTokens ? window._ddTokens.find(function(t){return t => t.idx === _touchTokIdx;}) : null);
-    if (tok && key) {
-      if (ddState[key]) {
-        const prevIdx = ddState[key].idx;
-        const prevEl = document.getElementById('ddtok_'+prevIdx);
-        if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity=''; }
-      }
-      Object.keys(ddState).forEach(k => { if (ddState[k] && ddState[k].idx === _touchTokIdx) ddSetCell(k, null); });
-      ddSetCell(key, tok);
-      const srcEl = document.getElementById('ddtok_'+_touchTokIdx);
-      if (srcEl) srcEl.classList.add('used');
-    }
-  }
-  _touchTokIdx = null;
+  document.getElementById(containerId).innerHTML = html;
+  document.getElementById(buttonsId).innerHTML = '<button class="big-btn btn-primary" id="checkBtn" onclick="checkDragDrop_' + mode + '()">Antwort prüfen ✓</button>';
 }
 
 function checkDragDropAnswer() {
-  // Check all required cells
-  let allFilled = true, allCorrect = true;
-  Object.keys(DD_SOLUTION).forEach(key => {
-    const cell = document.getElementById('ddc_'+key);
+  var allFilled = true, allCorrect = true;
+  Object.keys(DD_SOLUTION).forEach(function(key) {
+    var cell = document.getElementById('ddc_' + key);
     if (!cell) return;
-    const placed = ddState[key];
+    var placed = ddState[key];
+    cell.classList.remove('filled-win','filled-lose');
     if (!placed) { allFilled = false; cell.classList.add('wrong-final'); return; }
-    if (placed.label === DD_SOLUTION[key]) {
-      cell.classList.add('correct-final');
-    } else {
-      cell.classList.add('wrong-final');
-      allCorrect = false;
-    }
+    if (placed.label === DD_SOLUTION[key]) { cell.classList.add('correct-final'); }
+    else { cell.classList.add('wrong-final'); allCorrect = false; }
   });
   return { isCorrect: allFilled && allCorrect, isPartial: !allFilled || !allCorrect };
 }
 
 // =============================================
-// DRAG & DROP A9 – Benenne die Linien
+// A9 – LINIEN DER FECHTBAHN
 // =============================================
-// 5 drop zones: leftmost=End-Linie, 2nd=Start-Linie, middle=Mittel-Linie, 4th=Start-Linie, rightmost=End-Linie
-const A9_ZONES = [
-  { id:'a9z0', label:'End-Linie',    correct:'End-Linie' },
-  { id:'a9z1', label:'Start-Linie',  correct:'Start-Linie' },
-  { id:'a9z2', label:'Mittel-Linie', correct:'Mittel-Linie' },
-  { id:'a9z3', label:'Start-Linie',  correct:'Start-Linie' },
-  { id:'a9z4', label:'End-Linie',    correct:'End-Linie' },
+var A9_ZONES = [
+  { id:'a9z0', correct:'End-Linie' },
+  { id:'a9z1', correct:'Start-Linie' },
+  { id:'a9z2', correct:'Mittel-Linie' },
+  { id:'a9z3', correct:'Start-Linie' },
+  { id:'a9z4', correct:'End-Linie' },
 ];
-const A9_TOKENS = ['End-Linie','Mittel-Linie','Start-Linie','Torlinie','End-Linie','Start-Linie'];
-
-let a9State = {}; // zoneId -> token label
-let a9TouchIdx = null;
+var A9_TOKENS_LIST = ['End-Linie','Mittel-Linie','Start-Linie','Torlinie','End-Linie','Start-Linie'];
 
 function renderDragDropA9(containerId, buttonsId) {
   a9State = {};
-  window._currentQ = QUESTIONS.find(q => q.id === 'A9');
+  ddSelectedToken = null;
+  window._currentQ = QUESTIONS.find(function(q) { return q.id === 'A9'; });
   window._answered = false;
+  var tokens = shuffleArray(A9_TOKENS_LIST.map(function(t, i) { return { label:t, idx:i, cls:'' }; }));
+  window._a9Tokens = tokens;
 
-  const tokens = shuffleArray(A9_TOKENS.map((t, i) => ({ label: t, idx: i })));
-
-  let html = `<div class="question-card">
-    <span class="question-part-badge" style="background:#118AB220;color:#118AB2;">Teil A: Allgemeines</span>
-    <div class="question-text">Benenne die Linien der Fechtbahn!</div>
-    <div class="answer-count-badge">🖱️ Ziehe die richtigen Namen auf die Pfeile!</div>
-
-    <div class="dd-info">🏟️ Schau dir die Fechtbahn an und ziehe die Linien-Namen auf die Pfeile!</div>
-
-    <!-- FECHTBAHN GRAFIK MIT DROP-ZONES -->
-    <div style="background:#f0f4ff;border-radius:16px;padding:16px 8px;margin:12px 0;overflow-x:auto;">
-      <!-- Bahn-Streifen -->
-      <div style="position:relative;margin:0 auto;width:100%;max-width:420px;">
-        <!-- Bahn-Körper -->
-        <div style="
-          border:3px solid #333;border-radius:4px;
-          background:white;height:48px;position:relative;margin:0 10px;
-          display:flex;align-items:stretch;
-        ">
-          <!-- vertikale Linien -->
-          <div style="position:absolute;left:0;top:-6px;bottom:-6px;width:3px;background:#E63946;border-radius:2px;"></div>
-          <div style="position:absolute;left:35.7%;top:-6px;bottom:-6px;width:2px;background:#333;border-style:dashed;"></div>
-          <div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:3px;background:#FF7F11;margin-left:-1px;"></div>
-          <div style="position:absolute;left:64.3%;top:-6px;bottom:-6px;width:2px;background:#333;"></div>
-          <div style="position:absolute;right:0;top:-6px;bottom:-6px;width:3px;background:#E63946;border-radius:2px;"></div>
-        </div>
-
-        <!-- Pfeile + Drop-Zonen unterhalb -->
-        <div style="display:flex;justify-content:space-between;margin:6px 10px 0;position:relative;">
-          ${A9_ZONES.map((z,i) => `
-            <div style="display:flex;flex-direction:column;align-items:center;flex:1;${i===0?'align-items:flex-start':i===4?'align-items:flex-end':''}">
-              <div style="font-size:1.1rem;">⬆️</div>
-              <div class="a9-drop-zone dd-drop-cell"
-                id="${z.id}"
-                data-zone="${z.id}"
-                style="min-width:58px;font-size:0.7rem;margin-top:4px;"
-                ondragover="a9DragOver(event,'${z.id}')"
-                ondragleave="a9DragLeave(event,'${z.id}')"
-                ondrop="a9Drop(event,'${z.id}')"
-                onclick="a9ClearZone('${z.id}')">
-                <span class="dd-cell-content" style="font-size:0.7rem;line-height:1.2;"></span>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-
-    <div class="dd-label">📦 Linien-Namen – zieh sie auf die Pfeile:</div>
-    <div class="dd-tokens" id="a9TokenBank">`;
-
-  tokens.forEach(t => {
-    html += `<div class="dd-token" id="a9tok_${t.idx}"
-      draggable="true" data-idx="${t.idx}" data-label="${t.label}"
-      style="font-size:0.82rem;padding:8px 10px;"
-      ondragstart="a9DragStart(event,${t.idx})"
-      ontouchstart="a9TouchStart(event,${t.idx})"
-      ontouchmove="a9TouchMove(event)"
-      ontouchend="a9TouchEnd(event)"
-      >${t.label}</div>`;
+  var html = '<div class="question-card">'
+    + '<span class="question-part-badge" style="background:#118AB220;color:#118AB2;">Teil A: Allgemeines</span>'
+    + '<div class="question-text">Benenne die Linien der Fechtbahn!</div>'
+    + '<div class="answer-count-badge">👆 Tippe einen Namen an – dann tippe auf den Pfeil!</div>'
+    + '<div class="dd-info">🏟️ Welcher Name gehört zu welchem Pfeil?</div>'
+    + '<div style="background:#f0f4ff;border-radius:16px;padding:16px 8px;margin:12px 0;">'
+    + '<div style="position:relative;margin:0 auto;max-width:420px;">'
+    + '<div style="border:3px solid #333;border-radius:4px;background:white;height:48px;position:relative;margin:0 10px;">'
+    + '<div style="position:absolute;left:0;top:-6px;bottom:-6px;width:3px;background:#E63946;border-radius:2px;"></div>'
+    + '<div style="position:absolute;left:35.7%;top:-6px;bottom:-6px;width:2px;background:#333;"></div>'
+    + '<div style="position:absolute;left:50%;top:-6px;bottom:-6px;width:3px;background:#FF7F11;margin-left:-1px;"></div>'
+    + '<div style="position:absolute;left:64.3%;top:-6px;bottom:-6px;width:2px;background:#333;"></div>'
+    + '<div style="position:absolute;right:0;top:-6px;bottom:-6px;width:3px;background:#E63946;border-radius:2px;"></div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;margin:8px 10px 0;">';
+  A9_ZONES.forEach(function(z) {
+    html += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;">'
+      + '<div style="font-size:1rem;">⬆️</div>'
+      + '<div class="dd-drop-cell a9-drop-zone" id="' + z.id + '" onclick="tapPlaceInZone(\'' + z.id + '\',\'a9\')" style="min-width:52px;margin-top:4px;font-size:0.68rem;">'
+      + '<span class="dd-cell-content" style="font-size:0.68rem;line-height:1.2;"></span>'
+      + '</div></div>';
   });
-
-  html += `</div>
-    <p style="font-size:0.75rem;color:#AAA;text-align:center;">💡 Auf ein Feld tippen entfernt den Namen wieder.</p>
-  </div>`;
+  html += '</div></div></div>'
+    + '<div class="dd-label">1️⃣ Tippe einen Namen an:</div>'
+    + '<div class="dd-tokens" id="a9TokenBank">';
+  tokens.forEach(function(t) {
+    html += '<div class="dd-token" id="a9tok_' + t.idx + '" style="font-size:0.82rem;padding:8px 10px;" onclick="tapSelectToken(' + t.idx + ',\'a9\')">' + t.label + '</div>';
+  });
+  html += '</div>'
+    + '<p style="font-size:0.75rem;color:#AAA;text-align:center;">💡 Belegtes Feld antippen entfernt den Namen wieder.</p>'
+    + '</div>';
 
   document.getElementById(containerId).innerHTML = html;
-  document.getElementById(buttonsId).innerHTML =
-    `<button class="big-btn btn-primary" id="checkBtn" onclick="checkA9_${buttonsId.replace('Buttons','')}()">Antwort prüfen ✓</button>`;
-
-  window._a9Tokens = tokens;
-}
-
-let _a9DragIdx = null;
-function a9DragStart(e, idx) {
-  _a9DragIdx = idx;
-  e.dataTransfer.setData('text/plain', idx);
-  setTimeout(() => { const el = document.getElementById('a9tok_'+idx); if(el) el.style.opacity='0.4'; }, 0);
-}
-function a9DragOver(e, zid) { e.preventDefault(); (function(e,c){if(e)e.classList.add(c)})(document.getElementById(zid),'drag-over'); }
-function a9DragLeave(e, zid) { (function(e,c){if(e)e.classList.remove(c)})(document.getElementById(zid),'drag-over'); }
-function a9Drop(e, zid) {
-  e.preventDefault();
-  (function(e,c){if(e)e.classList.remove(c)})(document.getElementById(zid),'drag-over');
-  const idx = parseInt(e.dataTransfer.getData('text/plain'));
-  const tok = (window._a9Tokens ? window._a9Tokens.find(function(t){return t => t.idx === idx;}) : null);
-  if (!tok) return;
-  a9PlaceToken(zid, tok);
-}
-function a9ClearZone(zid) {
-  if (!a9State[zid]) return;
-  const prevIdx = a9State[zid].idx;
-  const prevEl = document.getElementById('a9tok_'+prevIdx);
-  if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity = ''; }
-  delete a9State[zid];
-  const cell = document.getElementById(zid);
-  if (cell) { cell.querySelector('.dd-cell-content').textContent = ''; cell.className = 'a9-drop-zone dd-drop-cell'; }
-}
-function a9PlaceToken(zid, tok) {
-  // If token already in a zone, clear that zone
-  Object.keys(a9State).forEach(k => { if ((a9State[k] && a9State[k].idx) === tok.idx) a9ClearZone(k); });
-  // Clear existing occupant
-  if (a9State[zid]) a9ClearZone(zid);
-  a9State[zid] = tok;
-  const cell = document.getElementById(zid);
-  if (cell) { cell.querySelector('.dd-cell-content').textContent = tok.label; cell.classList.add('filled-win'); }
-  const srcEl = document.getElementById('a9tok_'+tok.idx);
-  if (srcEl) srcEl.classList.add('used');
-}
-// Touch
-function a9TouchStart(e, idx) { a9TouchIdx = idx; showDDGhost(wi((window._a9Tokens ? window._a9Tokens.find(function(t){return t.idx===idx;}) : null) || {label:''}).label); }
-function a9TouchMove(e) {
-  e.preventDefault();
-  const touch = e.touches[0];
-  moveDDGhost(touch.clientX, touch.clientY);
-  document.querySelectorAll('.a9-drop-zone').forEach(c => c.classList.remove('drag-over'));
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  ((el && el.closest) ? el.closest('.a9-drop-zone') : null) && ((el && el.closest) ? el.closest('.a9-drop-zone') : null).classList.add('drag-over'); if ((el && el.classList && el.classList.contains('a9-drop-zone')) && el.classList.add('drag-over'));
-}
-function a9TouchEnd(e) {
-  hideDDGhost();
-  document.querySelectorAll('.a9-drop-zone').forEach(c => c.classList.remove('drag-over'));
-  const touch = e.changedTouches[0];
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  const cell = (el && el.closest && el.closest('.a9-drop-zone')) || ((el && el.classList && el.classList.contains('a9-drop-zone')) ? el : null);
-  if (cell && a9TouchIdx !== null) {
-    const tok = (window._a9Tokens ? window._a9Tokens.find(function(t){return t => t.idx === a9TouchIdx;}) : null);
-    if (tok) a9PlaceToken(cell.dataset.zone, tok);
-  }
-  a9TouchIdx = null;
+  document.getElementById(buttonsId).innerHTML = '<button class="big-btn btn-primary" id="checkBtn" onclick="checkA9_' + buttonsId.replace('Buttons','') + '()">Antwort prüfen ✓</button>';
 }
 
 function checkA9Answer() {
-  let allCorrect = true, allFilled = true;
-  A9_ZONES.forEach(z => {
-    const cell = document.getElementById(z.id);
+  var allCorrect = true, allFilled = true;
+  A9_ZONES.forEach(function(z) {
+    var cell = document.getElementById(z.id);
     if (!cell) return;
-    const placed = a9State[z.id];
-    cell.classList.remove('filled-win');
+    var placed = a9State[z.id];
+    cell.classList.remove('filled-win','filled-lose');
     if (!placed) { allFilled = false; cell.classList.add('wrong-final'); return; }
     if (placed.label === z.correct) { cell.classList.add('correct-final'); }
     else { cell.classList.add('wrong-final'); allCorrect = false; }
@@ -2180,176 +2019,81 @@ function checkA9Answer() {
 }
 
 // =============================================
-// DRAG & DROP A10 – Maße der Fechtbahn
+// A10 – MASSE DER FECHTBAHN
 // =============================================
-// Drop zones: Breite(links), 5m(links), 2m(linke Mitte), 2m(rechte Mitte), 5m(rechts), Gesamt
-const A10_ZONES = [
-  { id:'a10_breite', correct:'1,5 m', label:'Breite' },
-  { id:'a10_left',   correct:'5 m',   label:'End→Start links' },
-  { id:'a10_ml',     correct:'2 m',   label:'Start→Mitte links' },
-  { id:'a10_mr',     correct:'2 m',   label:'Mitte→Start rechts' },
-  { id:'a10_right',  correct:'5 m',   label:'End→Start rechts' },
-  { id:'a10_gesamt', correct:'14 m',  label:'Gesamtlänge' },
+var A10_ZONES = [
+  { id:'a10_breite', correct:'1,5 m' },
+  { id:'a10_left',   correct:'5 m' },
+  { id:'a10_ml',     correct:'2 m' },
+  { id:'a10_mr',     correct:'2 m' },
+  { id:'a10_right',  correct:'5 m' },
+  { id:'a10_gesamt', correct:'14 m' },
 ];
-const A10_TOKENS = ['1,5 m','5 m','2 m','2 m','5 m','14 m','10 m','3 m'];
-
-let a10State = {};
-let a10TouchIdx = null;
+var A10_TOKENS_LIST = ['1,5 m','5 m','2 m','2 m','5 m','14 m','10 m','3 m'];
 
 function renderDragDropA10(containerId, buttonsId) {
   a10State = {};
-  window._currentQ = QUESTIONS.find(q => q.id === 'A10');
+  ddSelectedToken = null;
+  window._currentQ = QUESTIONS.find(function(q) { return q.id === 'A10'; });
   window._answered = false;
+  var tokens = shuffleArray(A10_TOKENS_LIST.map(function(t, i) { return { label:t, idx:i, cls:'' }; }));
+  window._a10Tokens = tokens;
 
-  const tokens = shuffleArray(A10_TOKENS.map((t, i) => ({ label: t, idx: i })));
-
-  let html = `<div class="question-card">
-    <span class="question-part-badge" style="background:#118AB220;color:#118AB2;">Teil A: Allgemeines</span>
-    <div class="question-text">Trage die Maße der Fechtbahn zwischen den Pfeilen auf dem Antwortbogen ein (z.B. 3 m)!</div>
-    <div class="answer-count-badge">🖱️ Ziehe die richtigen Maße in die Felder mit den Pfeilen!</div>
-
-    <div class="dd-info">📏 Ziehe die richtigen Meter-Zahlen an die richtige Stelle der Fechtbahn!</div>
-
-    <!-- FECHTBAHN MIT MASS-ZONEN -->
-    <div style="background:#f0f4ff;border-radius:16px;padding:16px 10px 10px;margin:12px 0;overflow-x:auto;">
-      <div style="position:relative;margin:0 auto;max-width:440px;">
-
-        <!-- Breiten-Pfeil links -->
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-          <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:0.65rem;color:#118AB2;font-weight:800;">Breite ↕</div>
-          <div class="a10-drop-zone dd-drop-cell" id="a10_breite" data-zone="a10_breite"
-            style="min-width:52px;font-size:0.72rem;"
-            ondragover="a10DragOver(event,'a10_breite')" ondragleave="a10DragLeave(event,'a10_breite')"
-            ondrop="a10Drop(event,'a10_breite')" onclick="a10ClearZone('a10_breite')">
-            <span class="dd-cell-content" style="font-size:0.72rem;"></span>
-          </div>
-        </div>
-
-        <!-- Bahn-Streifen -->
-        <div style="border:3px solid #333;border-radius:4px;background:white;height:40px;position:relative;margin:0;">
-          <div style="position:absolute;left:0;top:-5px;bottom:-5px;width:3px;background:#E63946;"></div>
-          <div style="position:absolute;left:35.7%;top:-5px;bottom:-5px;width:2px;background:#555;border-left:2px dashed #555;"></div>
-          <div style="position:absolute;left:50%;top:-5px;bottom:-5px;width:3px;background:#FF7F11;margin-left:-1px;"></div>
-          <div style="position:absolute;left:64.3%;top:-5px;bottom:-5px;width:2px;background:#555;"></div>
-          <div style="position:absolute;right:0;top:-5px;bottom:-5px;width:3px;background:#E63946;"></div>
-        </div>
-
-        <!-- Maß-Zonen UNTER der Bahn -->
-        <div style="margin-top:10px;">
-          <!-- Obere Reihe: 4 Segment-Maße -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-bottom:6px;">
-            ${['a10_left','a10_ml','a10_mr','a10_right'].map((zid,i) => {
-              const labels = ['← 5m Bereich →','← 2m →','← 2m →','← 5m Bereich →'];
-              return `<div style="text-align:center;">
-                <div style="font-size:0.55rem;color:#888;margin-bottom:2px;">${labels[i]}</div>
-                <div class="a10-drop-zone dd-drop-cell" id="${zid}" data-zone="${zid}"
-                  style="min-width:44px;font-size:0.72rem;margin:0 auto;"
-                  ondragover="a10DragOver(event,'${zid}')" ondragleave="a10DragLeave(event,'${zid}')"
-                  ondrop="a10Drop(event,'${zid}')" onclick="a10ClearZone('${zid}')">
-                  <span class="dd-cell-content" style="font-size:0.72rem;"></span>
-                </div>
-              </div>`;
-            }).join('')}
-          </div>
-          <!-- Untere Reihe: Gesamtlänge -->
-          <div style="text-align:center;">
-            <div style="font-size:0.6rem;color:#888;margin-bottom:2px;">⟵ Gesamtlänge der Bahn ⟶</div>
-            <div class="a10-drop-zone dd-drop-cell" id="a10_gesamt" data-zone="a10_gesamt"
-              style="min-width:90px;font-size:0.72rem;margin:0 auto;"
-              ondragover="a10DragOver(event,'a10_gesamt')" ondragleave="a10DragLeave(event,'a10_gesamt')"
-              ondrop="a10Drop(event,'a10_gesamt')" onclick="a10ClearZone('a10_gesamt')">
-              <span class="dd-cell-content" style="font-size:0.72rem;"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="dd-label">📦 Maße – zieh sie in die richtigen Felder:</div>
-    <div class="dd-tokens" id="a10TokenBank">`;
-
-  tokens.forEach(t => {
-    html += `<div class="dd-token" id="a10tok_${t.idx}"
-      draggable="true" data-idx="${t.idx}" data-label="${t.label}"
-      style="font-size:0.85rem;padding:9px 12px;"
-      ondragstart="a10DragStart(event,${t.idx})"
-      ontouchstart="a10TouchStart(event,${t.idx})"
-      ontouchmove="a10TouchMove(event)"
-      ontouchend="a10TouchEnd(event)"
-      >${t.label}</div>`;
+  var html = '<div class="question-card">'
+    + '<span class="question-part-badge" style="background:#118AB220;color:#118AB2;">Teil A: Allgemeines</span>'
+    + '<div class="question-text">Trage die Maße der Fechtbahn zwischen den Pfeilen auf dem Antwortbogen ein (z.B. 3 m)!</div>'
+    + '<div class="answer-count-badge">👆 Tippe ein Maß an – dann tippe auf das Feld!</div>'
+    + '<div class="dd-info">📏 Ziehe die richtigen Meter-Zahlen an die richtige Stelle!</div>'
+    + '<div style="background:#f0f4ff;border-radius:16px;padding:16px 10px 10px;margin:12px 0;">'
+    + '<div style="position:relative;margin:0 auto;max-width:440px;">'
+    // Breite
+    + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'
+    + '<div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:0.65rem;color:#118AB2;font-weight:800;">Breite ↕</div>'
+    + '<div class="dd-drop-cell a10-drop-zone" id="a10_breite" onclick="tapPlaceInZone(\'a10_breite\',\'a10\')" style="min-width:52px;font-size:0.72rem;">'
+    + '<span class="dd-cell-content" style="font-size:0.72rem;"></span></div></div>'
+    // Bahn
+    + '<div style="border:3px solid #333;border-radius:4px;background:white;height:40px;position:relative;">'
+    + '<div style="position:absolute;left:0;top:-5px;bottom:-5px;width:3px;background:#E63946;"></div>'
+    + '<div style="position:absolute;left:35.7%;top:-5px;bottom:-5px;width:2px;background:#555;"></div>'
+    + '<div style="position:absolute;left:50%;top:-5px;bottom:-5px;width:3px;background:#FF7F11;margin-left:-1px;"></div>'
+    + '<div style="position:absolute;left:64.3%;top:-5px;bottom:-5px;width:2px;background:#555;"></div>'
+    + '<div style="position:absolute;right:0;top:-5px;bottom:-5px;width:3px;background:#E63946;"></div>'
+    + '</div>'
+    // Segment fields
+    + '<div style="margin-top:10px;">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-bottom:6px;">';
+  [['a10_left','← 5m →'],['a10_ml','← 2m →'],['a10_mr','← 2m →'],['a10_right','← 5m →']].forEach(function(z) {
+    html += '<div style="text-align:center;">'
+      + '<div style="font-size:0.55rem;color:#888;margin-bottom:2px;">' + z[1] + '</div>'
+      + '<div class="dd-drop-cell a10-drop-zone" id="' + z[0] + '" onclick="tapPlaceInZone(\'' + z[0] + '\',\'a10\')" style="min-width:44px;font-size:0.72rem;margin:0 auto;">'
+      + '<span class="dd-cell-content" style="font-size:0.72rem;"></span></div></div>';
   });
-
-  html += `</div>
-    <p style="font-size:0.75rem;color:#AAA;text-align:center;">💡 Auf ein Feld tippen entfernt das Maß wieder.</p>
-  </div>`;
+  html += '</div>'
+    + '<div style="text-align:center;">'
+    + '<div style="font-size:0.6rem;color:#888;margin-bottom:2px;">⟵ Gesamtlänge ⟶</div>'
+    + '<div class="dd-drop-cell a10-drop-zone" id="a10_gesamt" onclick="tapPlaceInZone(\'a10_gesamt\',\'a10\')" style="min-width:90px;font-size:0.72rem;margin:0 auto;">'
+    + '<span class="dd-cell-content" style="font-size:0.72rem;"></span></div>'
+    + '</div></div></div></div>'
+    + '<div class="dd-label">1️⃣ Tippe ein Maß an:</div>'
+    + '<div class="dd-tokens" id="a10TokenBank">';
+  tokens.forEach(function(t) {
+    html += '<div class="dd-token" id="a10tok_' + t.idx + '" style="font-size:0.85rem;padding:9px 12px;" onclick="tapSelectToken(' + t.idx + ',\'a10\')">' + t.label + '</div>';
+  });
+  html += '</div>'
+    + '<p style="font-size:0.75rem;color:#AAA;text-align:center;">💡 Belegtes Feld antippen entfernt das Maß wieder.</p>'
+    + '</div>';
 
   document.getElementById(containerId).innerHTML = html;
-  document.getElementById(buttonsId).innerHTML =
-    `<button class="big-btn btn-primary" id="checkBtn" onclick="checkA10_${buttonsId.replace('Buttons','')}()">Antwort prüfen ✓</button>`;
-
-  window._a10Tokens = tokens;
+  document.getElementById(buttonsId).innerHTML = '<button class="big-btn btn-primary" id="checkBtn" onclick="checkA10_' + buttonsId.replace('Buttons','') + '()">Antwort prüfen ✓</button>';
 }
 
-let _a10DragIdx = null;
-function a10DragStart(e, idx) {
-  _a10DragIdx = idx;
-  e.dataTransfer.setData('text/plain', idx);
-  setTimeout(() => { const el = document.getElementById('a10tok_'+idx); if(el) el.style.opacity='0.4'; }, 0);
-}
-function a10DragOver(e, zid) { e.preventDefault(); (function(e,c){if(e)e.classList.add(c)})(document.getElementById(zid),'drag-over'); }
-function a10DragLeave(e, zid) { (function(e,c){if(e)e.classList.remove(c)})(document.getElementById(zid),'drag-over'); }
-function a10Drop(e, zid) {
-  e.preventDefault();
-  (function(e,c){if(e)e.classList.remove(c)})(document.getElementById(zid),'drag-over');
-  const idx = parseInt(e.dataTransfer.getData('text/plain'));
-  const tok = (window._a10Tokens ? window._a10Tokens.find(function(t){return t => t.idx === idx;}) : null);
-  if (tok) a10PlaceToken(zid, tok);
-}
-function a10ClearZone(zid) {
-  if (!a10State[zid]) return;
-  const prevEl = document.getElementById('a10tok_'+a10State[zid].idx);
-  if (prevEl) { prevEl.classList.remove('used'); prevEl.style.opacity = ''; }
-  delete a10State[zid];
-  const cell = document.getElementById(zid);
-  if (cell) { cell.querySelector('.dd-cell-content').textContent = ''; cell.className = 'a10-drop-zone dd-drop-cell'; }
-}
-function a10PlaceToken(zid, tok) {
-  Object.keys(a10State).forEach(k => { if ((a10State[k] && a10State[k].idx) === tok.idx) a10ClearZone(k); });
-  if (a10State[zid]) a10ClearZone(zid);
-  a10State[zid] = tok;
-  const cell = document.getElementById(zid);
-  if (cell) { cell.querySelector('.dd-cell-content').textContent = tok.label; cell.classList.add('filled-win'); }
-  const srcEl = document.getElementById('a10tok_'+tok.idx);
-  if (srcEl) srcEl.classList.add('used');
-}
-function a10TouchStart(e, idx) { a10TouchIdx = idx; showDDGhost(wind((window._a10Tokens ? window._a10Tokens.find(function(t){return t.idx===idx;}) : null) || {label:''}).label); }
-function a10TouchMove(e) {
-  e.preventDefault();
-  const touch = e.touches[0];
-  moveDDGhost(touch.clientX, touch.clientY);
-  document.querySelectorAll('.a10-drop-zone').forEach(c => c.classList.remove('drag-over'));
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  ((el && el.closest) ? el.closest('.a10-drop-zone') : null) && ((el && el.closest) ? el.closest('.a10-drop-zone') : null).classList.add('drag-over'); if ((el && el.classList && el.classList.contains('a10-drop-zone')) && el.classList.add('drag-over'));
-}
-function a10TouchEnd(e) {
-  hideDDGhost();
-  document.querySelectorAll('.a10-drop-zone').forEach(c => c.classList.remove('drag-over'));
-  const touch = e.changedTouches[0];
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  const cell = (el && el.closest && el.closest('.a10-drop-zone')) || ((el && el.classList && el.classList.contains('a10-drop-zone')) ? el : null);
-  if (cell && a10TouchIdx !== null) {
-    const tok = (window._a10Tokens ? window._a10Tokens.find(function(t){return t => t.idx === a10TouchIdx;}) : null);
-    if (tok) a10PlaceToken(cell.dataset.zone, tok);
-  }
-  a10TouchIdx = null;
-}
 function checkA10Answer() {
-  let allCorrect = true, allFilled = true;
-  A10_ZONES.forEach(z => {
-    const cell = document.getElementById(z.id);
+  var allCorrect = true, allFilled = true;
+  A10_ZONES.forEach(function(z) {
+    var cell = document.getElementById(z.id);
     if (!cell) return;
-    const placed = a10State[z.id];
-    cell.classList.remove('filled-win');
+    var placed = a10State[z.id];
+    cell.classList.remove('filled-win','filled-lose');
     if (!placed) { allFilled = false; cell.classList.add('wrong-final'); return; }
     if (placed.label === z.correct) { cell.classList.add('correct-final'); }
     else { cell.classList.add('wrong-final'); allCorrect = false; }
@@ -2357,16 +2101,7 @@ function checkA10Answer() {
   return { isCorrect: allFilled && allCorrect, isPartial: !allFilled || !allCorrect };
 }
 
-// =============================================
-// SHARED GHOST HELPERS
-// =============================================
-function showDDGhost(label) {
-  if (!ddGhost) { ddGhost = document.createElement('div'); ddGhost.className = 'dd-dragging-ghost'; document.body.appendChild(ddGhost); }
-  ddGhost.textContent = label;
-  ddGhost.style.display = 'block';
-}
-function moveDDGhost(x, y) { if (ddGhost) { ddGhost.style.left = x+'px'; ddGhost.style.top = y+'px'; } }
-function hideDDGhost() { if (ddGhost) ddGhost.style.display = 'none'; }
+
 
 // =============================================
 // RESET PROGRESS
